@@ -144,7 +144,7 @@
     <div class="container">
         <!-- GAME SECTION -->
         <div class="game-area">
-            <canvas id="gameCanvas" width="400" height="400"></canvas>
+            <canvas id="gameCanvas" width="640" height="480"></canvas>
             
             <div class="stats">
                 Score: <span id="score" style="color: var(--accent-color)">0</span> <br>
@@ -205,7 +205,7 @@
                     <tr>
                         <td><strong>Logic</strong></td>
                         <td>Tìm đường ngắn nhất</td>
-                        <td>A* + FloodFill (Thoát hiểm)</td>
+                        <td>A* + Breadth-first search - BFS (Thoát hiểm)</td>
                         <td>Chu trình cố định</td>
                         <td>Học máy (Neural Net)</td>
                     </tr>
@@ -361,7 +361,7 @@
             let speed = 60; // Tốc độ mặc định
 
             if(algo === 'astar') { nameDisplay = "Basic A*"; speed = 80; }
-            if(algo === 'hybrid') { nameDisplay = "Hybrid (A* + FloodFill)"; speed = 40; } // Nhanh hơn
+            if(algo === 'hybrid') { nameDisplay = "Hybrid (A*, DFS and Future Simulation)"; speed = 40; } // Nhanh hơn
             if(algo === 'hamilton') { nameDisplay = "Hamiltonian Cycle"; speed = 15; } // Rất nhanh
             if(algo === 'rl') { nameDisplay = "Deep Q-Learning"; speed = 60; }
             
