@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Snake AI Visualization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --accent-color: #4CAF50;
+            --btn-astar: #2196F3;
+            --btn-hybrid: #00BCD4; /* Màu Cyan cho Hybrid */
+            --btn-hamilton: #9C27B0;
+            --btn-rl: #FF9800;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Roboto Mono', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 { margin-bottom: 20px; color: var(--accent-color); text-shadow: 0 0 10px rgba(76, 175, 80, 0.3); }
+
+        .container {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        /* Khu vực Game */
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: #000;
+            border: 4px solid var(--accent-color);
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+            border-radius: 4px;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+        }
+
+        button {
+            padding: 12px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            transition: 0.2s;
+            color: white;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+        }
+
+        .btn-astar { background-color: var(--btn-astar); }
+        .btn-hybrid { background-color: var(--btn-hybrid); color: #000; } /* Chữ đen cho dễ đọc trên nền sáng */
+        .btn-hamilton { background-color: var(--btn-hamilton); }
+        .btn-rl { background-color: var(--btn-rl); }
+        .btn-stop { background-color: #f44336; grid-column: span 2; margin-top: 5px; }
+        
+        button:hover { opacity: 0.8; transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
+        
+        button.active { 
+            box-shadow: 0 0 15px currentColor; 
+            border: 2px solid white; 
+            transform: scale(1.05);
+        }
+
+        .stats {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            background: #333;
+            padding: 10px 20px;
+            border-radius: 8px;
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        /* Bảng so sánh */
+        .comparison-table {
+            max-width: 800px; /* Mở rộng chiều ngang */
+            background-color: #2d2d2d;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .comparison-table h3 { margin-top: 0; color: #fff; border-bottom: 2px solid #444; padding-bottom: 10px; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 15px 10px;
+            text-align: left;
+            border-bottom: 1px solid #444;
+            font-size: 0.85rem;
+        }
+
+        th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        
+        /* Màu tiêu đề cột tương ứng với nút */
+        th.col-astar { color: var(--btn-astar); }
+        th.col-hybrid { color: var(--btn-hybrid); }
+        th.col-hamilton { color: var(--btn-hamilton); }
+        th.col-rl { color: var(--btn-rl); }
+
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #383838; }
+
+        .highlight { font-weight: bold; color: #fff; }
+        .bad { color: #ff5252; }
+        .good { color: #69f0ae; }
+    </style>
+</head>
+<body>
+
+    <h1>🐍 Snake AI Visualization</h1>
+
+    <div class="container">
+        <!-- GAME SECTION -->
+        <div class="game-area">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+            
+            <div class="stats">
+                Score: <span id="score" style="color: var(--accent-color)">0</span> <br>
+                Algo: <span id="algo-name">Ready</span>
+            </div>
+
+            <div class="controls">
+                <button class="btn-astar" onclick="startGame('astar')">Basic A*</button>
+                <button class="btn-hybrid" onclick="startGame('hybrid')">Hybrid A*</button>
+                <button class="btn-hamilton" onclick="startGame('hamilton')">Hamiltonian</button>
+                <button class="btn-rl" onclick="startGame('rl')">Deep Q-Learning</button>
+                <button class="btn-stop" onclick="stopGame()">Stop Game</button>
+            </div>
+        </div>
+
+        <!-- COMPARISON TABLE SECTION -->
+        <div class="comparison-table">
+            <h3>📊 So sánh Hiệu suất Thuật toán</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tiêu chí</th>
+                        <th class="col-astar">Basic A*</th>
+                        <th class="col-hybrid">Hybrid (A*++)</th>
+                        <th class="col-hamilton">Hamiltonian</th>
+                        <th class="col-rl">Deep Q-Learning</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Max Score</strong></td>
+                        <td class="bad">Thấp (Dễ chết)</td>
+                        <td class="good">Cao (Gần Max)</td>
+                        <td class="highlight">Tối đa (Max)</td>
+                        <td>Cao</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Survival Rate</strong></td>
+                        <td class="bad">Thấp (Kẹt góc)</td>
+                        <td class="good">Rất Cao (Safety)</td>
+                        <td class="highlight">100% (Tuyệt đối)</td>
+                        <td>Tùy model</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Steps / Food</strong></td>
+                        <td class="highlight">Tối ưu nhất</td>
+                        <td class="good">Tối ưu</td>
+                        <td class="bad">Rất nhiều (Tệ)</td>
+                        <td>Trung bình</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Computation</strong></td>
+                        <td class="highlight">Rất nhanh</td>
+                        <td>Nhanh</td>
+                        <td>Rất nhanh (Pre-calc)</td>
+                        <td class="bad">Chậm (Cần GPU)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Logic</strong></td>
+                        <td>Tìm đường ngắn nhất</td>
+                        <td>A* + FloodFill (Thoát hiểm)</td>
+                        <td>Chu trình cố định</td>
+                        <td>Học máy (Neural Net)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+        const algoNameEl = document.getElementById('algo-name');
+
+        const CELL_SIZE = 20;
+        const GRID_W = canvas.width / CELL_SIZE;
+        const GRID_H = canvas.height / CELL_SIZE;
+
+        let snake = [];
+        let food = {};
+        let currentAlgo = '';
+        let gameInterval = null;
+        let isProcessing = false;
+
+        function initGame() {
+            snake = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}];
+            spawnFood();
+            draw();
+        }
+
+        function spawnFood() {
+            while (true) {
+                food = {
+                    x: Math.floor(Math.random() * GRID_W),
+                    y: Math.floor(Math.random() * GRID_H)
+                };
+                // Check xem thức ăn có trùng thân rắn không
+                let onSnake = false;
+                for (let segment of snake) {
+                    if (segment.x === food.x && segment.y === food.y) {
+                        onSnake = true;
+                        break;
+                    }
+                }
+                if (!onSnake) break;
+            }
+        }
+
+        function draw() {
+            // Background
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Food
+            ctx.fillStyle = '#FF5252';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "red";
+            ctx.fillRect(food.x * CELL_SIZE, food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            ctx.shadowBlur = 0;
+
+            // Snake
+            snake.forEach((segment, index) => {
+                if (index === 0) {
+                    ctx.fillStyle = '#4CAF50'; // Head
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = "#4CAF50";
+                } else {
+                    ctx.fillStyle = '#81C784'; // Body
+                    ctx.shadowBlur = 0;
+                }
+                ctx.fillRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                
+                // Grid line effect
+                ctx.strokeStyle = '#1a1a1a';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            });
+        }
+
+        async function gameStep() {
+            if (isProcessing) return;
+            isProcessing = true;
+
+            const payload = {
+                snake: snake.map(s => [s.x, s.y]),
+                food: [food.x, food.y],
+                board_size: {width: GRID_W, height: GRID_H},
+                algorithm: currentAlgo
+            };
+
+            try {
+                // Lưu ý: Đổi port 8000 thành 8001 nếu bạn đang chạy port 8001
+                const response = await fetch('http://127.0.0.1:8001/predict', { 
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                const move = data.move; 
+
+                if (move[0] === 0 && move[1] === 0) {
+                    stopGame();
+                    alert(`Game Over! Score: ${scoreEl.innerText} (Rắn bị kẹt)`);
+                    return;
+                }
+
+                const head = snake[0];
+                const newHead = {x: head.x + move[0], y: head.y + move[1]};
+
+                if(newHead.x < 0 || newHead.x >= GRID_W || newHead.y < 0 || newHead.y >= GRID_H) {
+                    stopGame();
+                    alert(`Game Over! Score: ${scoreEl.innerText} (Đâm tường)`);
+                    return;
+                }
+                
+                // Check tự cắn đuôi
+                for (let s of snake) {
+                     if (newHead.x === s.x && newHead.y === s.y) {
+                        stopGame();
+                        alert(`Game Over! Score: ${scoreEl.innerText} (Cắn đuôi)`);
+                        return;
+                     }
+                }
+
+                snake.unshift(newHead);
+
+                if (newHead.x === food.x && newHead.y === food.y) {
+                    scoreEl.innerText = parseInt(scoreEl.innerText) + 1;
+                    spawnFood();
+                } else {
+                    snake.pop();
+                }
+
+                draw();
+
+            } catch (error) {
+                console.error("Lỗi:", error);
+                stopGame();
+            }
+            
+            isProcessing = false;
+        }
+
+        function startGame(algo) {
+            stopGame();
+            currentAlgo = algo;
+            
+            document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.btn-${algo}`).classList.add('active');
+            
+            let nameDisplay = "";
+            let speed = 60; // Tốc độ mặc định
+
+            if(algo === 'astar') { nameDisplay = "Basic A*"; speed = 80; }
+            if(algo === 'hybrid') { nameDisplay = "Hybrid (A* + FloodFill)"; speed = 40; } // Nhanh hơn
+            if(algo === 'hamilton') { nameDisplay = "Hamiltonian Cycle"; speed = 15; } // Rất nhanh
+            if(algo === 'rl') { nameDisplay = "Deep Q-Learning"; speed = 60; }
+            
+            algoNameEl.innerText = nameDisplay;
+            initGame();
+            scoreEl.innerText = 0;
+
+            gameInterval = setInterval(gameStep, speed);
+        }
+
+        function stopGame() {
+            clearInterval(gameInterval);
+            isProcessing = false;
+            algoNameEl.innerText = "Stopped";
+            document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
