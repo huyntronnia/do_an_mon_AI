@@ -17,7 +17,6 @@ from enum import Enum
 # ==========================================
 # 1. IMPORT CÁC MODULE PHỤ TRỢ
 # ==========================================
-# Cố gắng import Agent và Model, nếu thiếu thì báo lỗi nhẹ để code vẫn chạy phần khác
 try:
     from model import Linear_QNet
 except ImportError:
@@ -82,7 +81,7 @@ class HybridSolver:
         heapq.heappush(open_list, start_node)
         
         steps = 0
-        while open_list and steps < 2000: # Limit steps to prevent lag
+        while open_list and steps < 2000:
             steps += 1
             current_node = heapq.heappop(open_list)
             closed_list.add(current_node.position)
@@ -113,7 +112,7 @@ class HybridSolver:
         while queue:
             current = queue.popleft()
             count += 1
-            if count >= 200: return count # Limit flood fill
+            if count >= 200: return count 
             for neighbor in self.get_neighbors(current):
                 if neighbor not in visited and neighbor not in obstacles_set:
                     visited.add(neighbor)
@@ -132,17 +131,15 @@ class HybridSolver:
         
         if path_to_food and len(path_to_food) > 1:
             next_move = path_to_food[1]
-            # Kiểm tra xem đi bước này có bị kẹt vào ngõ cụt không (Flood Fill)
             virtual_snake = [next_move] + snake[:-1]
             virtual_obstacles = set(virtual_snake)
             if virtual_snake[-1] in virtual_obstacles: virtual_obstacles.remove(virtual_snake[-1])
             
-            # Nếu đường còn thông thoáng (có thể tìm đường về đuôi hoặc khoảng trống lớn)
             if self.a_star_path(next_move, virtual_snake[-1], virtual_obstacles): return next_move
             space = self.bfs_flood_fill(next_move, virtual_obstacles)
             if space > ((self.game.w * self.game.h) // (BLOCK_SIZE**2) - len(snake)) * 0.5: return next_move
 
-        # 2. Nếu không có đường an toàn đến thức ăn, tìm nước đi sống sót lâu nhất
+        # 2. Fallback survival
         neighbors = self.get_neighbors(start)
         best_move = None
         max_score = -float('inf')
@@ -153,11 +150,9 @@ class HybridSolver:
         for move in neighbors:
             if move in obstacles_safety: continue
             score = 0
-            # Ưu tiên đi được về phía đuôi
             if self.a_star_path(move, snake[-1], obstacles_safety): 
                 score += 5000 - self.get_distance(move, food)
             else: 
-                # Nếu không thì chọn vùng rộng nhất
                 score += self.bfs_flood_fill(move, obstacles_safety) * 10 - 1000
             
             if score > max_score:
@@ -166,7 +161,7 @@ class HybridSolver:
         return best_move
 
 # ==========================================
-# 4. THUẬT TOÁN: HAMILTONIAN CYCLE (ĐÃ KHÔI PHỤC FULL CODE)
+# 4. THUẬT TOÁN: HAMILTONIAN CYCLE
 # ==========================================
 class HamiltonSolver:
     def __init__(self, game):
@@ -174,58 +169,45 @@ class HamiltonSolver:
         self.hamiltonian_path = self._build_hamiltonian_cycle()
 
     def _build_hamiltonian_cycle(self):
-        """Tạo chu trình zig-zag phủ kín bản đồ"""
         path_map = {}
-        # Duyệt qua các cột
         for x in range(0, self.game.w, BLOCK_SIZE):
             col_idx = x // BLOCK_SIZE
-            
-            # Cột chẵn: Đi xuống
             if col_idx % 2 == 0:
                 for y in range(BLOCK_SIZE, self.game.h - BLOCK_SIZE, BLOCK_SIZE):
                     path_map[Point(x, y)] = Point(x, y + BLOCK_SIZE)
                 path_map[Point(x, self.game.h - BLOCK_SIZE)] = Point(x + BLOCK_SIZE, self.game.h - BLOCK_SIZE)
-            
-            # Cột lẻ: Đi lên
             else:
                 for y in range(self.game.h - BLOCK_SIZE, BLOCK_SIZE, -BLOCK_SIZE):
                     path_map[Point(x, y)] = Point(x, y - BLOCK_SIZE)
-                
                 if col_idx < (self.game.w // BLOCK_SIZE) - 1:
                     path_map[Point(x, BLOCK_SIZE)] = Point(x + BLOCK_SIZE, BLOCK_SIZE)
                 else:
-                    path_map[Point(x, BLOCK_SIZE)] = Point(x, 0) # Về đích
+                    path_map[Point(x, BLOCK_SIZE)] = Point(x, 0)
 
-        # Hàng ngang trên cùng về gốc
         for x in range(self.game.w - BLOCK_SIZE, 0, -BLOCK_SIZE):
             path_map[Point(x, 0)] = Point(x - BLOCK_SIZE, 0)
-        
         path_map[Point(0, 0)] = Point(0, BLOCK_SIZE)
         return path_map
 
     def get_next_move(self):
         if self.game.head in self.hamiltonian_path:
             return self.hamiltonian_path[self.game.head]
-        
-        # Fallback an toàn nếu bị lệch khỏi đường
         for dx, dy in [(20,0), (-20,0), (0,20), (0,-20)]:
              if 0 <= self.game.head.x+dx < self.game.w and 0 <= self.game.head.y+dy < self.game.h:
                  return Point(self.game.head.x+dx, self.game.head.y+dy)
         return None
 
 # ==========================================
-# 5. SETUP SERVER & SIMULATED GAME & RL MODEL
+# 5. SETUP SERVER & RL MODEL
 # ==========================================
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 app.mount("/static", StaticFiles(directory="templates"), name="static")
 templates = Jinja2Templates(directory="templates")
 
-# --- LOAD RL MODEL ---
 rl_model = None
 if Linear_QNet:
     try:
-        # Input size = 14 (Khớp với logic get_game_state bên dưới)
         rl_model = Linear_QNet(14, 256, 3)
         model_path = './model/model.pth'
         if os.path.exists(model_path):
@@ -240,13 +222,11 @@ if Linear_QNet:
 class SimulatedGame:
     def __init__(self, snake_coords, food_coord, width, height):
         self.block_size = BLOCK_SIZE
-        # Quy đổi kích thước Grid -> Pixel
         self.w = width * BLOCK_SIZE
         self.h = height * BLOCK_SIZE
         
-        # --- FIX: Tự động nhận diện toạ độ Pixel hay Grid ---
         sample_x = snake_coords[0][0]
-        is_pixel_coords = sample_x > 40 # Nếu toạ độ > 40, giả định là Pixel
+        is_pixel_coords = sample_x > 40 
         
         if is_pixel_coords:
             self.snake = [Point(x, y) for x, y in snake_coords]
@@ -257,7 +237,6 @@ class SimulatedGame:
             
         self.head = self.snake[0]
         
-        # Xác định hướng
         if len(self.snake) > 1:
             neck = self.snake[1]
             if self.head.x > neck.x: self.direction = Direction.RIGHT
@@ -275,7 +254,7 @@ class SimulatedGame:
             return True
         return False
 
-# --- HÀM TÍNH TRẠNG THÁI CHO RL (INPUT: 14) ---
+# HÀM TÍNH TRẠNG THÁI CHO RL (INPUT: 14)
 def get_game_state(game):
     head = game.head
     point_l = Point(head.x - 20, head.y)
@@ -289,34 +268,27 @@ def get_game_state(game):
     dir_d = game.direction == Direction.DOWN
 
     state = [
-        # Danger Straight
         (dir_r and game.is_collision(point_r)) or 
         (dir_l and game.is_collision(point_l)) or 
         (dir_u and game.is_collision(point_u)) or 
         (dir_d and game.is_collision(point_d)),
 
-        # Danger Right
         (dir_u and game.is_collision(point_r)) or 
         (dir_d and game.is_collision(point_l)) or 
         (dir_l and game.is_collision(point_u)) or 
         (dir_r and game.is_collision(point_d)),
 
-        # Danger Left
         (dir_d and game.is_collision(point_r)) or 
         (dir_u and game.is_collision(point_l)) or 
         (dir_r and game.is_collision(point_u)) or 
         (dir_l and game.is_collision(point_d)),
         
-        # Move Direction
         dir_l, dir_r, dir_u, dir_d,
         
-        # Food Location 
-        game.food.x < game.head.x,  # Food Left
-        game.food.x > game.head.x,  # Food Right
-        game.food.y < game.head.y,  # Food Up
-        game.food.y > game.head.y,  # Food Down
-        
-        # Extra inputs (FloodFill/Safety) - Giữ chỗ cho đủ 14 input
+        game.food.x < game.head.x, 
+        game.food.x > game.head.x, 
+        game.food.y < game.head.y, 
+        game.food.y > game.head.y, 
         0, 0, 0
     ]
     return np.array(state, dtype=int)
@@ -327,9 +299,19 @@ class GameInput(BaseModel):
     board_size: dict
     algorithm: str
 
+# ==========================================
+# 6. ROUTING (ĐÃ THÊM /COMPARE)
+# ==========================================
+
 @app.get("/")
 def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+# --- ĐÂY LÀ PHẦN BẠN CẦN: ROUTE SO SÁNH ---
+@app.get("/compare")
+def compare_page(request: Request):
+    return templates.TemplateResponse("compare.html", {"request": request})
+# ------------------------------------------
 
 @app.post("/predict")
 def predict(data: GameInput):
@@ -337,7 +319,6 @@ def predict(data: GameInput):
     move_vector = [0, 0]
 
     try:
-        # --- XỬ LÝ: A* & HYBRID ---
         if data.algorithm in ["hybrid", "astar"]:
             solver = HybridSolver(game)
             if data.algorithm == "astar":
@@ -352,35 +333,24 @@ def predict(data: GameInput):
             if next_pt:
                 move_vector = [int((next_pt.x - game.head.x)/BLOCK_SIZE), int((next_pt.y - game.head.y)/BLOCK_SIZE)]
 
-        # --- XỬ LÝ: HAMILTONIAN ---
         elif data.algorithm == "hamilton":
             solver = HamiltonSolver(game)
             next_pt = solver.get_next_move()
             if next_pt:
                 move_vector = [int((next_pt.x - game.head.x)/BLOCK_SIZE), int((next_pt.y - game.head.y)/BLOCK_SIZE)]
 
-        # --- XỬ LÝ: DEEP Q-LEARNING ---
         elif data.algorithm == "rl" and rl_model:
-            # 1. Lấy trạng thái
             state = get_game_state(game)
-            
-            # 2. Convert to Tensor (Thêm chiều batch [1, 14])
             state0 = torch.tensor(state, dtype=torch.float).unsqueeze(0)
-            
-            # 3. Predict
             prediction = rl_model(state0)
-            move = torch.argmax(prediction).item() # 0: Straight, 1: Right, 2: Left
+            move = torch.argmax(prediction).item()
             
-            # 4. Map Move to Vector
             clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
             idx = clock_wise.index(game.direction)
             
-            if move == 0: # Straight
-                new_dir = clock_wise[idx]
-            elif move == 1: # Right Turn
-                new_dir = clock_wise[(idx + 1) % 4]
-            else: # Left Turn
-                new_dir = clock_wise[(idx - 1) % 4]
+            if move == 0: new_dir = clock_wise[idx]
+            elif move == 1: new_dir = clock_wise[(idx + 1) % 4]
+            else: new_dir = clock_wise[(idx - 1) % 4]
 
             if new_dir == Direction.RIGHT: move_vector = [1, 0]
             elif new_dir == Direction.LEFT: move_vector = [-1, 0]
@@ -389,7 +359,6 @@ def predict(data: GameInput):
 
     except Exception as e:
         print(f"Lỗi Xử Lý: {e}")
-        # Fallback: Đi sang phải nếu lỗi
         move_vector = [1, 0]
 
     return {"move": move_vector}
