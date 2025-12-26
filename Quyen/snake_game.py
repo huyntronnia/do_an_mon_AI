@@ -60,7 +60,7 @@ class SnakeGameAI:
         
         # Load ảnh
         self.use_image = False
-        img_path = os.path.join("picture", "apple.png") 
+        img_path = "/Users/kimquyen/Documents/SIU - TKVM/do_an_mon_AI/Quyen/picture/apple.png" 
         try:
             if os.path.exists(img_path):
                 raw_img = pygame.image.load(img_path).convert_alpha()
