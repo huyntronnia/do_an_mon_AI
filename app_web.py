@@ -1,8 +1,6 @@
 import torch
 import random
 import numpy as np
-import heapq
-import math
 import uvicorn
 import sys
 import os
@@ -15,13 +13,23 @@ from pydantic import BaseModel
 from enum import Enum
 
 # ==========================================
-# 1. IMPORT CÁC MODULE PHỤ TRỢ
+# 1. IMPORT CÁC MODULE THUẬT TOÁN (QUAN TRỌNG)
 # ==========================================
 try:
     from model import Linear_QNet
 except ImportError:
     print("⚠️ Cảnh báo: Không tìm thấy file model.py. Deep Q-Learning sẽ không hoạt động.")
     Linear_QNet = None
+
+# Import trực tiếp từ các file solver bạn đã viết
+# Đảm bảo các file này nằm cùng thư mục với app_web.py
+try:
+    from solver_hybrid import HybridSolver
+    from solver_hamilton import HamiltonSolver
+    from solver_A_star import AStarSolver
+except ImportError as e:
+    print(f"⚠️ Lỗi Import Solver: {e}")
+    print("Hãy chắc chắn rằng các file solver_*.py và utils.py nằm cùng thư mục.")
 
 # ==========================================
 # 2. CẤU HÌNH & ĐỊNH NGHĨA CƠ BẢN
@@ -36,195 +44,18 @@ class Direction(Enum):
     DOWN = 4
 
 # ==========================================
-# 3. THUẬT TOÁN: HYBRID A* & FLOOD FILL
+# 3. CLASS GIẢ LẬP GAME (ADAPTER)
 # ==========================================
-class Node:
-    def __init__(self, parent=None, position=None):
-        self.parent = parent
-        self.position = position
-        self.g = 0
-        self.h = 0
-        self.f = 0
-    def __eq__(self, other): return self.position == other.position
-    def __lt__(self, other): return self.f < other.f
-
-class HybridSolver:
-    def __init__(self, game):
-        self.game = game
-        self.cols = game.w // BLOCK_SIZE
-        self.rows = game.h // BLOCK_SIZE
-
-    def get_distance(self, start, end):
-        return math.sqrt((start.x - end.x)**2 + (start.y - end.y)**2)
-    def get_manhattan_distance(self, start, end):
-        return abs(start.x - end.x) + abs(start.y - end.y)
-
-    def get_neighbors(self, head):
-        neighbors = []
-        directions = [(0, -BLOCK_SIZE), (0, BLOCK_SIZE), (-BLOCK_SIZE, 0), (BLOCK_SIZE, 0)]
-        random.shuffle(directions)
-        for dx, dy in directions:
-            new_pt = Point(head.x + dx, head.y + dy)
-            if 0 <= new_pt.x < self.game.w and 0 <= new_pt.y < self.game.h:
-                neighbors.append(new_pt)
-        return neighbors
-
-    def a_star_path(self, start, target, obstacles):
-        obstacles_set = set(obstacles)
-        if start in obstacles_set: obstacles_set.remove(start)
-        if start == target: return []
-        
-        start_node = Node(None, start)
-        end_node = Node(None, target)
-        open_list = []
-        closed_list = set()
-        heapq.heappush(open_list, start_node)
-        
-        steps = 0
-        while open_list and steps < 2000:
-            steps += 1
-            current_node = heapq.heappop(open_list)
-            closed_list.add(current_node.position)
-            
-            if current_node == end_node:
-                path = []
-                curr = current_node
-                while curr is not None:
-                    path.append(curr.position)
-                    curr = curr.parent
-                return path[::-1]
-            
-            for neighbor_pos in self.get_neighbors(current_node.position):
-                if neighbor_pos in obstacles_set or neighbor_pos in closed_list: continue
-                new_node = Node(current_node, neighbor_pos)
-                new_node.g = current_node.g + 1
-                new_node.h = self.get_manhattan_distance(new_node.position, end_node.position)
-                new_node.f = new_node.g + new_node.h
-                heapq.heappush(open_list, new_node)
-        return None
-
-    def bfs_flood_fill(self, start, obstacles):
-        obstacles_set = set(obstacles)
-        if start in obstacles_set: obstacles_set.remove(start)
-        queue = deque([start])
-        visited = set([start])
-        count = 0
-        while queue:
-            current = queue.popleft()
-            count += 1
-            if count >= 200: return count 
-            for neighbor in self.get_neighbors(current):
-                if neighbor not in visited and neighbor not in obstacles_set:
-                    visited.add(neighbor)
-                    queue.append(neighbor)
-        return count
-
-    def get_next_move(self):
-        start = self.game.head
-        food = self.game.food
-        snake = self.game.snake
-        obstacles = set(snake)
-        if snake[-1] in obstacles: obstacles.remove(snake[-1])
-        
-        # 1. Thử tìm đường ngắn nhất đến thức ăn
-        path_to_food = self.a_star_path(start, food, obstacles)
-        
-        if path_to_food and len(path_to_food) > 1:
-            next_move = path_to_food[1]
-            virtual_snake = [next_move] + snake[:-1]
-            virtual_obstacles = set(virtual_snake)
-            if virtual_snake[-1] in virtual_obstacles: virtual_obstacles.remove(virtual_snake[-1])
-            
-            if self.a_star_path(next_move, virtual_snake[-1], virtual_obstacles): return next_move
-            space = self.bfs_flood_fill(next_move, virtual_obstacles)
-            if space > ((self.game.w * self.game.h) // (BLOCK_SIZE**2) - len(snake)) * 0.5: return next_move
-
-        # 2. Fallback survival
-        neighbors = self.get_neighbors(start)
-        best_move = None
-        max_score = -float('inf')
-        
-        obstacles_safety = set(snake)
-        if snake[-1] in obstacles_safety: obstacles_safety.remove(snake[-1])
-        
-        for move in neighbors:
-            if move in obstacles_safety: continue
-            score = 0
-            if self.a_star_path(move, snake[-1], obstacles_safety): 
-                score += 5000 - self.get_distance(move, food)
-            else: 
-                score += self.bfs_flood_fill(move, obstacles_safety) * 10 - 1000
-            
-            if score > max_score:
-                max_score = score
-                best_move = move
-        return best_move
-
-# ==========================================
-# 4. THUẬT TOÁN: HAMILTONIAN CYCLE
-# ==========================================
-class HamiltonSolver:
-    def __init__(self, game):
-        self.game = game
-        self.hamiltonian_path = self._build_hamiltonian_cycle()
-
-    def _build_hamiltonian_cycle(self):
-        path_map = {}
-        for x in range(0, self.game.w, BLOCK_SIZE):
-            col_idx = x // BLOCK_SIZE
-            if col_idx % 2 == 0:
-                for y in range(BLOCK_SIZE, self.game.h - BLOCK_SIZE, BLOCK_SIZE):
-                    path_map[Point(x, y)] = Point(x, y + BLOCK_SIZE)
-                path_map[Point(x, self.game.h - BLOCK_SIZE)] = Point(x + BLOCK_SIZE, self.game.h - BLOCK_SIZE)
-            else:
-                for y in range(self.game.h - BLOCK_SIZE, BLOCK_SIZE, -BLOCK_SIZE):
-                    path_map[Point(x, y)] = Point(x, y - BLOCK_SIZE)
-                if col_idx < (self.game.w // BLOCK_SIZE) - 1:
-                    path_map[Point(x, BLOCK_SIZE)] = Point(x + BLOCK_SIZE, BLOCK_SIZE)
-                else:
-                    path_map[Point(x, BLOCK_SIZE)] = Point(x, 0)
-
-        for x in range(self.game.w - BLOCK_SIZE, 0, -BLOCK_SIZE):
-            path_map[Point(x, 0)] = Point(x - BLOCK_SIZE, 0)
-        path_map[Point(0, 0)] = Point(0, BLOCK_SIZE)
-        return path_map
-
-    def get_next_move(self):
-        if self.game.head in self.hamiltonian_path:
-            return self.hamiltonian_path[self.game.head]
-        for dx, dy in [(20,0), (-20,0), (0,20), (0,-20)]:
-             if 0 <= self.game.head.x+dx < self.game.w and 0 <= self.game.head.y+dy < self.game.h:
-                 return Point(self.game.head.x+dx, self.game.head.y+dy)
-        return None
-
-# ==========================================
-# 5. SETUP SERVER & RL MODEL
-# ==========================================
-app = FastAPI()
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-app.mount("/static", StaticFiles(directory="templates"), name="static")
-templates = Jinja2Templates(directory="templates")
-
-rl_model = None
-if Linear_QNet:
-    try:
-        rl_model = Linear_QNet(14, 256, 3)
-        model_path = './model/model.pth'
-        if os.path.exists(model_path):
-            rl_model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
-            rl_model.eval()
-            print("✅ RL Model Loaded Successfully (CPU Mode)")
-        else:
-            print("❌ Không tìm thấy file ./model/model.pth")
-    except Exception as e:
-        print(f"❌ Lỗi khi load Model: {e}")
-
+# Class này đóng vai trò cầu nối để các Solver (vốn viết cho pygame)
+# có thể hiểu được dữ liệu từ Web gửi lên.
 class SimulatedGame:
     def __init__(self, snake_coords, food_coord, width, height):
         self.block_size = BLOCK_SIZE
+        # Web gửi width/height là số ô (ví dụ 32, 24), cần nhân với BLOCK_SIZE
         self.w = width * BLOCK_SIZE
         self.h = height * BLOCK_SIZE
         
+        # Kiểm tra xem dữ liệu gửi lên là tọa độ pixel hay tọa độ lưới
         sample_x = snake_coords[0][0]
         is_pixel_coords = sample_x > 40 
         
@@ -237,6 +68,7 @@ class SimulatedGame:
             
         self.head = self.snake[0]
         
+        # Xác định hướng hiện tại dựa vào đầu và cổ rắn
         if len(self.snake) > 1:
             neck = self.snake[1]
             if self.head.x > neck.x: self.direction = Direction.RIGHT
@@ -248,13 +80,65 @@ class SimulatedGame:
 
     def is_collision(self, pt=None):
         if pt is None: pt = self.head
+        # Check tường
         if pt.x > self.w - BLOCK_SIZE or pt.x < 0 or pt.y > self.h - BLOCK_SIZE or pt.y < 0:
             return True
+        # Check thân rắn
         if pt in self.snake[1:]:
             return True
         return False
+    
+    # Hàm này cần thiết cho RL (Agent) để tính state chính xác như lúc train
+    def is_trap(self, point):
+        w_grid = self.w // BLOCK_SIZE
+        h_grid = self.h // BLOCK_SIZE
+        
+        start_x = int(point.x // BLOCK_SIZE)
+        start_y = int(point.y // BLOCK_SIZE)
+        
+        if start_x < 0 or start_x >= w_grid or start_y < 0 or start_y >= h_grid:
+            return True 
 
-# HÀM TÍNH TRẠNG THÁI CHO RL (INPUT: 14)
+        # Tạo lưới ảo để check BFS
+        grid = np.zeros((w_grid, h_grid), dtype=int)
+        for pt in self.snake:
+            x_idx = int(pt.x // BLOCK_SIZE)
+            y_idx = int(pt.y // BLOCK_SIZE)
+            if 0 <= x_idx < w_grid and 0 <= y_idx < h_grid:
+                grid[x_idx][y_idx] = 1 
+        
+        # Đuôi rắn không tính là vật cản vì nó sẽ di chuyển
+        tail = self.snake[-1]
+        tail_x = int(tail.x // BLOCK_SIZE)
+        tail_y = int(tail.y // BLOCK_SIZE)
+        grid[tail_x][tail_y] = 0 
+
+        if grid[start_x][start_y] == 1:
+            return True
+            
+        # BFS tìm đường về đuôi
+        queue = [(start_x, start_y)]
+        visited = set()
+        visited.add((start_x, start_y))
+        found_tail = False
+        
+        while queue:
+            cx, cy = queue.pop(0)
+            if cx == tail_x and cy == tail_y:
+                found_tail = True
+                break
+            for dx, dy in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+                nx, ny = cx + dx, cy + dy
+                if 0 <= nx < w_grid and 0 <= ny < h_grid:
+                    if grid[nx][ny] == 0 and (nx, ny) not in visited:
+                        visited.add((nx, ny))
+                        queue.append((nx, ny))
+        
+        return not found_tail
+
+# ==========================================
+# 4. HÀM TÍNH TRẠNG THÁI CHO RL
+# ==========================================
 def get_game_state(game):
     head = game.head
     point_l = Point(head.x - 20, head.y)
@@ -267,31 +151,74 @@ def get_game_state(game):
     dir_u = game.direction == Direction.UP
     dir_d = game.direction == Direction.DOWN
 
+    # Thêm check trap cho giống logic lúc train
+    trap_l = game.is_trap(point_l)
+    trap_r = game.is_trap(point_r)
+    trap_u = game.is_trap(point_u)
+    trap_d = game.is_trap(point_d)
+    
+    trap_straight = (dir_r and trap_r) or (dir_l and trap_l) or (dir_u and trap_u) or (dir_d and trap_d)
+    trap_right = (dir_u and trap_r) or (dir_d and trap_l) or (dir_l and trap_u) or (dir_r and trap_d)
+    trap_left = (dir_d and trap_r) or (dir_u and trap_l) or (dir_r and trap_u) or (dir_l and trap_d)
+
     state = [
+        # Danger Straight
         (dir_r and game.is_collision(point_r)) or 
         (dir_l and game.is_collision(point_l)) or 
         (dir_u and game.is_collision(point_u)) or 
         (dir_d and game.is_collision(point_d)),
 
+        # Danger Right
         (dir_u and game.is_collision(point_r)) or 
         (dir_d and game.is_collision(point_l)) or 
         (dir_l and game.is_collision(point_u)) or 
         (dir_r and game.is_collision(point_d)),
 
+        # Danger Left
         (dir_d and game.is_collision(point_r)) or 
         (dir_u and game.is_collision(point_l)) or 
         (dir_r and game.is_collision(point_u)) or 
         (dir_l and game.is_collision(point_d)),
         
+        # Move direction
         dir_l, dir_r, dir_u, dir_d,
         
-        game.food.x < game.head.x, 
-        game.food.x > game.head.x, 
-        game.food.y < game.head.y, 
-        game.food.y > game.head.y, 
-        0, 0, 0
+        # Food location
+        game.food.x < game.head.x, # food left
+        game.food.x > game.head.x, # food right
+        game.food.y < game.head.y, # food up
+        game.food.y > game.head.y, # food down
+        
+        # Trap info (quan trọng cho model đã train)
+        trap_straight,
+        trap_right,
+        trap_left
     ]
     return np.array(state, dtype=int)
+
+# ==========================================
+# 5. SETUP SERVER & RL MODEL
+# ==========================================
+app = FastAPI()
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+app.mount("/static", StaticFiles(directory="templates"), name="static")
+templates = Jinja2Templates(directory="templates")
+
+# Load RL Model
+rl_model = None
+if Linear_QNet:
+    try:
+        # Input size phải khớp với training (14)
+        rl_model = Linear_QNet(14, 256, 3)
+        model_path = './model/model.pth'
+        if os.path.exists(model_path):
+            rl_model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+            rl_model.eval()
+            print("✅ RL Model Loaded Successfully (CPU Mode)")
+        else:
+            print("❌ Không tìm thấy file ./model/model.pth")
+    except Exception as e:
+        print(f"❌ Lỗi khi load Model: {e}")
 
 class GameInput(BaseModel):
     snake: list
@@ -300,66 +227,84 @@ class GameInput(BaseModel):
     algorithm: str
 
 # ==========================================
-# 6. ROUTING (ĐÃ THÊM /COMPARE)
+# 6. ROUTING
 # ==========================================
-
 @app.get("/")
 def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# --- ĐÂY LÀ PHẦN BẠN CẦN: ROUTE SO SÁNH ---
 @app.get("/compare")
 def compare_page(request: Request):
     return templates.TemplateResponse("compare.html", {"request": request})
-# ------------------------------------------
 
 @app.post("/predict")
 def predict(data: GameInput):
+    # Khởi tạo game giả lập từ dữ liệu frontend gửi về
     game = SimulatedGame(data.snake, data.food, data.board_size['width'], data.board_size['height'])
-    move_vector = [0, 0]
+    
+    move_vector = [0, 0] # Default move (đứng yên hoặc đi thẳng nếu lỗi)
+    next_pt = None
 
     try:
-        if data.algorithm in ["hybrid", "astar"]:
-            solver = HybridSolver(game)
-            if data.algorithm == "astar":
-                obstacles = set(game.snake)
-                if game.snake[0] in obstacles: obstacles.remove(game.snake[0])
-                if game.snake[-1] in obstacles: obstacles.remove(game.snake[-1])
-                path = solver.a_star_path(game.head, game.food, obstacles)
-                next_pt = path[1] if path and len(path) > 1 else None
-            else:
-                next_pt = solver.get_next_move()
+        # --- GỌI CÁC THUẬT TOÁN TỪ FILE NGOÀI ---
+        
+        if data.algorithm == "astar":
+            # Sử dụng AStarSolver từ solver_A_star.py
+            solver = AStarSolver(game)
+            next_pt = solver.get_next_move()
             
-            if next_pt:
-                move_vector = [int((next_pt.x - game.head.x)/BLOCK_SIZE), int((next_pt.y - game.head.y)/BLOCK_SIZE)]
+        elif data.algorithm == "hybrid":
+            # Sử dụng HybridSolver từ solver_hybrid.py
+            solver = HybridSolver(game)
+            next_pt = solver.get_next_move()
 
         elif data.algorithm == "hamilton":
+            # Sử dụng HamiltonSolver từ solver_hamilton.py
             solver = HamiltonSolver(game)
             next_pt = solver.get_next_move()
-            if next_pt:
-                move_vector = [int((next_pt.x - game.head.x)/BLOCK_SIZE), int((next_pt.y - game.head.y)/BLOCK_SIZE)]
 
         elif data.algorithm == "rl" and rl_model:
+            # Xử lý Deep Learning
             state = get_game_state(game)
             state0 = torch.tensor(state, dtype=torch.float).unsqueeze(0)
             prediction = rl_model(state0)
             move = torch.argmax(prediction).item()
             
+            # Map output của Model (0: thẳng, 1: phải, 2: trái) ra Vector di chuyển
             clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
             idx = clock_wise.index(game.direction)
             
-            if move == 0: new_dir = clock_wise[idx]
-            elif move == 1: new_dir = clock_wise[(idx + 1) % 4]
-            else: new_dir = clock_wise[(idx - 1) % 4]
+            if move == 0: new_dir = clock_wise[idx] # Thẳng
+            elif move == 1: new_dir = clock_wise[(idx + 1) % 4] # Phải
+            else: new_dir = clock_wise[(idx - 1) % 4] # Trái
 
             if new_dir == Direction.RIGHT: move_vector = [1, 0]
             elif new_dir == Direction.LEFT: move_vector = [-1, 0]
             elif new_dir == Direction.UP: move_vector = [0, -1]
             elif new_dir == Direction.DOWN: move_vector = [0, 1]
+            
+            # RL trả về move_vector luôn, không cần tính từ next_pt
+            return {"move": move_vector}
+
+        # --- XỬ LÝ KẾT QUẢ CỦA CÁC THUẬT TOÁN SEARCH (A*, HYBRID, HAMILTON) ---
+        if next_pt:
+            # Tính vector di chuyển từ tọa độ điểm tiếp theo
+            # (1, 0) -> Phải, (-1, 0) -> Trái, (0, -1) -> Lên, (0, 1) -> Xuống
+            dx = int((next_pt.x - game.head.x) / BLOCK_SIZE)
+            dy = int((next_pt.y - game.head.y) / BLOCK_SIZE)
+            move_vector = [dx, dy]
+        else:
+            # Nếu thuật toán không tìm được đường (bị kẹt), đi theo quán tính
+            # Để tránh crash web
+            if game.direction == Direction.RIGHT: move_vector = [1, 0]
+            elif game.direction == Direction.LEFT: move_vector = [-1, 0]
+            elif game.direction == Direction.UP: move_vector = [0, -1]
+            elif game.direction == Direction.DOWN: move_vector = [0, 1]
 
     except Exception as e:
-        print(f"Lỗi Xử Lý: {e}")
-        move_vector = [1, 0]
+        print(f"❌ Lỗi Xử Lý Thuật Toán {data.algorithm}: {e}")
+        import traceback
+        traceback.print_exc()
 
     return {"move": move_vector}
 
