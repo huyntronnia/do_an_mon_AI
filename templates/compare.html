@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Snake AI - Dual Comparison</title>
@@ -9,8 +9,8 @@
             --bg-color: #121212;
             --card-bg: #1e1e1e;
             --text-color: #e0e0e0;
-            --accent-1: #00E5FF; /* Cyan cho Game 1 */
-            --accent-2: #FF4081; /* Hồng cho Game 2 */
+            --accent-1: #00E5FF; /* Cyan for Game 1 */
+            --accent-2: #FF4081; /* Pink for Game 2 */
         }
 
         body {
@@ -112,7 +112,7 @@
 <body>
 
     <h1>⚔️ Algorithm Arena ⚔️</h1>
-    <a href="/" class="nav-link">← Quay lại chế độ đơn</a>
+    <a href="/" class="nav-link">← Back to Single Mode</a>
 
     <div class="dual-container">
         
@@ -120,10 +120,10 @@
         <div class="game-card p1">
             <label>PLAYER 1 (Cyan)</label>
             <select id="algo1">
-                <option value="hybrid" selected>Hybrid A* (Thông minh)</option>
+                <option value="hybrid" selected>Hybrid A* (Smart)</option>
                 <option value="rl">Deep Q-Learning</option>
-                <option value="astar">Basic A* (Dễ chết)</option>
-                <option value="hamilton">Hamiltonian (Chậm)</option>
+                <option value="astar">Basic A* (Risky)</option>
+                <option value="hamilton">Hamiltonian (Slow)</option>
             </select>
             <canvas id="canvas1" width="360" height="360"></canvas>
             <div class="stats">
@@ -137,9 +137,9 @@
             <label>PLAYER 2 (Pink)</label>
             <select id="algo2">
                 <option value="rl" selected>Deep Q-Learning</option>
-                <option value="hybrid">Hybrid A* (Thông minh)</option>
-                <option value="astar">Basic A* (Dễ chết)</option>
-                <option value="hamilton">Hamiltonian (Chậm)</option>
+                <option value="hybrid">Hybrid A* (Smart)</option>
+                <option value="astar">Basic A* (Risky)</option>
+                <option value="hamilton">Hamiltonian (Slow)</option>
             </select>
             <canvas id="canvas2" width="360" height="360"></canvas>
             <div class="stats">
@@ -152,14 +152,14 @@
     <div class="winner-banner" id="winnnerMsg"></div>
 
     <div class="main-controls">
-        <button class="btn-main btn-start" onclick="startDualGame()">BẮT ĐẦU SO SÁNH</button>
-        <button class="btn-main btn-stop" onclick="stopDualGame()">DỪNG LẠI</button>
+        <button class="btn-main btn-start" onclick="startDualGame()">START COMPARISON</button>
+        <button class="btn-main btn-stop" onclick="stopDualGame()">STOP</button>
     </div>
 
     <script>
         const CELL_SIZE = 20; // 360/20 = 18x18 grid
         
-        // Class quản lý một game riêng biệt
+        // Class managing a single game instance
         class SnakeInstance {
             constructor(canvasId, scoreId, statusId, color) {
                 this.canvas = document.getElementById(canvasId);
@@ -234,7 +234,7 @@
                 };
 
                 try {
-                    // Gọi API (Dùng port 8001 như bạn đang chạy)
+                    // Call API (Using port 8001 as previously configured)
                     const response = await fetch('http://127.0.0.1:8001/predict', { 
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
@@ -251,11 +251,11 @@
                     const head = this.snake[0];
                     const newHead = {x: head.x + move[0], y: head.y + move[1]};
 
-                    // Check tường
+                    // Check Wall
                     if(newHead.x < 0 || newHead.x >= this.GRID_W || newHead.y < 0 || newHead.y >= this.GRID_H) {
                         this.die("Hit Wall"); return;
                     }
-                    // Check thân
+                    // Check Body
                     if (this.snake.some(s => s.x === newHead.x && s.y === newHead.y)) {
                         this.die("Hit Body"); return;
                     }
@@ -300,10 +300,10 @@
             const algo1 = document.getElementById('algo1').value;
             const algo2 = document.getElementById('algo2').value;
 
-            // Chạy game loop
-            // Tốc độ 50ms cho mượt
+            // Run game loop
+            // Speed 60ms for smoothness
             intervalId = setInterval(async () => {
-                // Chạy song song
+                // Run in parallel
                 Promise.all([
                     game1.update(algo1),
                     game2.update(algo2)
