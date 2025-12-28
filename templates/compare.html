@@ -2,18 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Snake AI - Dual Comparison (640x480)</title>
+    <title>Snake AI - Algorithm Arena</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
-        /* 1. KHAI BÁO FONT AKIRA */
         @font-face {
             font-family: 'Akira';
             src: url("/static/akiraexpanded.otf") format('opentype');
         }
 
         :root {
-            --bg-color: #121212;
-            --card-bg: rgba(30, 30, 30, 0.85);
+            --bg-color: #0a0a0a;
+            --card-bg: rgba(30, 30, 30, 0.9);
             --text-color: #e0e0e0;
             --accent-1: #00E5FF;
             --accent-2: #FF4081;
@@ -21,11 +22,14 @@
 
         body {
             background-color: var(--bg-color);
-            background-image: url("/static/bg_snake.png");
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: cover;
-            background-attachment: fixed;
+            
+            /* --- BACKGROUND TECH GRID TƯƠNG TỰ FILE INDEX --- */
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            box-shadow: inset 0 0 200px rgba(0,0,0,0.9);
+
             color: var(--text-color);
             font-family: 'Roboto Mono', monospace;
             display: flex;
@@ -43,18 +47,22 @@
             margin-bottom: 10px; 
             text-transform: uppercase;
             text-align: center;
-            text-shadow: 0 4px 10px rgba(0,0,0,0.8); 
+            text-shadow: 0 4px 10px rgba(255, 255, 255, 0.2); 
             letter-spacing: 2px;
         }
 
         .nav-link { 
             color: #ddd; 
             text-decoration: none; 
-            margin-bottom: 20px; 
+            margin-bottom: 30px; 
             font-size: 0.9rem; 
-            text-shadow: 1px 1px 2px #000;
+            padding: 8px 16px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.7);
+            transition: 0.3s;
         }
-        .nav-link:hover { color: #fff; text-decoration: underline; }
+        .nav-link:hover { color: #fff; background: #333; border-color: #fff; }
 
         .dual-container {
             display: flex;
@@ -62,47 +70,53 @@
             flex-wrap: wrap;
             justify-content: center;
             width: 100%;
+            z-index: 2;
         }
 
         .game-card {
             background: var(--card-bg);
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
             display: flex;
             flex-direction: column;
             align-items: center;
             border-top: 4px solid #555;
-            
-            /* --- SỬA ĐỔI: Để width tự động theo Canvas --- */
             width: auto; 
-            max-width: 95vw; /* Đảm bảo không tràn màn hình */
-            
-            backdrop-filter: blur(4px);
+            max-width: 95vw;
+            backdrop-filter: blur(5px);
         }
 
         .game-card.p1 { border-color: var(--accent-1); }
         .game-card.p2 { border-color: var(--accent-2); }
 
+        .game-card label {
+            font-family: 'Akira', sans-serif;
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
         select {
-            background: #333;
+            background: #222;
             color: white;
-            padding: 8px;
+            padding: 10px;
             border: 1px solid #555;
             border-radius: 4px;
             font-family: inherit;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             width: 100%;
             cursor: pointer;
+            font-size: 0.9rem;
         }
 
         canvas {
             background-color: #000;
             border: 2px solid #333;
-            margin-bottom: 10px;
-            /* Đảm bảo canvas responsive nếu màn hình quá nhỏ */
+            margin-bottom: 15px;
             max-width: 100%; 
             height: auto;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
         }
 
         .stats {
@@ -111,13 +125,16 @@
             width: 100%;
             font-size: 0.9rem;
             color: #ccc;
+            padding-top: 10px;
+            border-top: 1px solid #444;
         }
-        .score-val { font-weight: bold; font-size: 1.2rem; color: #fff; }
+        .score-val { font-weight: bold; font-size: 1.2rem; }
 
         .main-controls {
-            margin-top: 30px;
+            margin-top: 40px;
             display: flex;
             gap: 20px;
+            z-index: 2;
         }
 
         button.btn-main {
@@ -134,39 +151,39 @@
         }
 
         .btn-start { background-color: #4CAF50; }
-        .btn-start:hover { transform: scale(1.05); background-color: #43A047; }
+        .btn-start:hover { transform: scale(1.05); background-color: #43A047; box-shadow: 0 0 15px #4CAF50; }
         
         .btn-stop { background-color: #f44336; }
         .btn-stop:hover { background-color: #d32f2f; }
 
         .winner-banner {
-            margin-top: 15px;
+            margin-top: 20px;
             height: 30px;
             font-weight: bold;
             color: #FFD700;
             font-family: 'Akira', sans-serif !important;
-            font-size: 1.2rem;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+            font-size: 1.5rem;
+            text-shadow: 0 2px 10px rgba(255, 215, 0, 0.6);
+            text-align: center;
+            z-index: 2;
         }
     </style>
 </head>
 <body>
 
-    <h1>Algorithm Arena</h1>
-    <a href="/" class="nav-link">← Back to Single Mode</a>
+    <h1 style="margin-top: 10px;"><i class="fas fa-swords"></i> Algorithm Arena <i class="fas fa-swords"></i></h1>
+    <a href="/" class="nav-link"><i class="fas fa-arrow-left"></i> Back to Single Mode</a>
 
     <div class="dual-container">
-        
         <!-- GAME 1 -->
         <div class="game-card p1">
-            <label>PLAYER 1 (Cyan)</label>
+            <label style="color: var(--accent-1)">PLAYER 1 (Cyan)</label>
             <select id="algo1">
                 <option value="hybrid" selected>Hybrid A* (Smart)</option>
                 <option value="rl">Deep Q-Learning</option>
                 <option value="astar">Basic A* (Risky)</option>
                 <option value="hamilton">Hamiltonian (Slow)</option>
             </select>
-            <!-- SỬA ĐỔI: Kích thước 640x480 -->
             <canvas id="canvas1" width="640" height="480"></canvas>
             <div class="stats">
                 <div>Score: <span id="score1" class="score-val" style="color: var(--accent-1)">0</span></div>
@@ -176,14 +193,13 @@
 
         <!-- GAME 2 -->
         <div class="game-card p2">
-            <label>PLAYER 2 (Pink)</label>
+            <label style="color: var(--accent-2)">PLAYER 2 (Pink)</label>
             <select id="algo2">
                 <option value="rl" selected>Deep Q-Learning</option>
                 <option value="hybrid">Hybrid A* (Smart)</option>
                 <option value="astar">Basic A* (Risky)</option>
                 <option value="hamilton">Hamiltonian (Slow)</option>
             </select>
-            <!-- SỬA ĐỔI: Kích thước 640x480 -->
             <canvas id="canvas2" width="640" height="480"></canvas>
             <div class="stats">
                 <div>Score: <span id="score2" class="score-val" style="color: var(--accent-2)">0</span></div>
@@ -210,42 +226,30 @@
                 this.color = color;
                 this.GRID_W = this.canvas.width / CELL_SIZE;
                 this.GRID_H = this.canvas.height / CELL_SIZE;
-                this.snake = [];
-                this.food = {};
-                this.active = false;
-                this.score = 0;
+                this.snake = []; this.food = {}; this.active = false; this.score = 0;
             }
             init() {
-                // SỬA ĐỔI: Vị trí xuất phát ở giữa map lớn (Khoảng x=15, y=12)
                 this.snake = [{x: 15, y: 12}, {x: 14, y: 12}, {x: 13, y: 12}];
                 this.spawnFood();
-                this.score = 0;
-                this.active = true;
-                this.scoreEl.innerText = "0";
-                this.statusEl.innerText = "Running...";
+                this.score = 0; this.active = true;
+                this.scoreEl.innerText = "0"; this.statusEl.innerText = "Running...";
                 this.draw();
             }
             spawnFood() {
                 while (true) {
-                    this.food = {
-                        x: Math.floor(Math.random() * this.GRID_W),
-                        y: Math.floor(Math.random() * this.GRID_H)
-                    };
-                    let onSnake = this.snake.some(s => s.x === this.food.x && s.y === this.food.y);
-                    if (!onSnake) break;
+                    this.food = {x: Math.floor(Math.random()*this.GRID_W), y: Math.floor(Math.random()*this.GRID_H)};
+                    if (!this.snake.some(s => s.x === this.food.x && s.y === this.food.y)) break;
                 }
             }
             draw() {
-                this.ctx.fillStyle = '#000';
-                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.fillStyle = '#000'; this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
                 if (!this.active) {
-                    this.ctx.fillStyle = '#333';
-                    this.ctx.font = '30px monospace'; // Tăng size chữ Game Over cho map to
-                    this.ctx.fillText("GAME OVER", 240, 240);
-                    return;
+                    this.ctx.fillStyle = '#333'; this.ctx.font = '30px monospace'; this.ctx.fillText("GAME OVER", 240, 240); return;
                 }
                 this.ctx.fillStyle = '#FF5252';
+                this.ctx.shadowBlur = 10; this.ctx.shadowColor = "red";
                 this.ctx.fillRect(this.food.x * CELL_SIZE, this.food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                this.ctx.shadowBlur = 0;
                 this.snake.forEach((segment, index) => {
                     this.ctx.fillStyle = index === 0 ? '#fff' : this.color;
                     this.ctx.fillRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
@@ -255,62 +259,33 @@
             }
             async update(algo) {
                 if (!this.active) return;
-                const payload = {
-                    snake: this.snake.map(s => [s.x, s.y]),
-                    food: [this.food.x, this.food.y],
-                    board_size: {width: this.GRID_W, height: this.GRID_H},
-                    algorithm: algo
-                };
+                const payload = { snake: this.snake.map(s => [s.x, s.y]), food: [this.food.x, this.food.y], board_size: {width: this.GRID_W, height: this.GRID_H}, algorithm: algo };
                 try {
-                    const response = await fetch('http://127.0.0.1:8001/predict', { 
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify(payload)
-                    });
+                    const response = await fetch('http://127.0.0.1:8001/predict', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
                     const data = await response.json();
                     const move = data.move; 
                     if (move[0] === 0 && move[1] === 0) { this.die("Stuck"); return; }
                     const head = this.snake[0];
                     const newHead = {x: head.x + move[0], y: head.y + move[1]};
-                    if(newHead.x < 0 || newHead.x >= this.GRID_W || newHead.y < 0 || newHead.y >= this.GRID_H) { this.die("Hit Wall"); return; }
-                    if (this.snake.some(s => s.x === newHead.x && s.y === newHead.y)) { this.die("Hit Body"); return; }
+                    if(newHead.x < 0 || newHead.x >= this.GRID_W || newHead.y < 0 || newHead.y >= this.GRID_H || this.snake.some(s => s.x === newHead.x && s.y === newHead.y)) { this.die("Crashed"); return; }
                     this.snake.unshift(newHead);
-                    if (newHead.x === this.food.x && newHead.y === this.food.y) {
-                        this.score++;
-                        this.scoreEl.innerText = this.score;
-                        this.spawnFood();
-                    } else {
-                        this.snake.pop();
-                    }
+                    if (newHead.x === this.food.x && newHead.y === this.food.y) { this.score++; this.scoreEl.innerText = this.score; this.spawnFood(); } else { this.snake.pop(); }
                     this.draw();
                 } catch (e) { console.error(e); this.active = false; }
             }
-            die(reason) {
-                this.active = false;
-                this.statusEl.innerText = `Dead (${reason})`;
-                this.statusEl.style.color = '#f44336';
-                this.draw();
-            }
+            die(reason) { this.active = false; this.statusEl.innerText = `Dead (${reason})`; this.statusEl.style.color = '#f44336'; this.draw(); }
         }
         const game1 = new SnakeInstance('canvas1', 'score1', 'status1', '#00E5FF');
         const game2 = new SnakeInstance('canvas2', 'score2', 'status2', '#FF4081');
         let intervalId = null;
         function startDualGame() {
-            stopDualGame();
-            game1.init();
-            game2.init();
+            stopDualGame(); game1.init(); game2.init();
             document.getElementById('winnnerMsg').innerText = "";
             const algo1 = document.getElementById('algo1').value;
             const algo2 = document.getElementById('algo2').value;
-            intervalId = setInterval(async () => {
-                Promise.all([game1.update(algo1), game2.update(algo2)]).then(() => { checkWinner(); });
-            }, 60);
+            intervalId = setInterval(async () => { Promise.all([game1.update(algo1), game2.update(algo2)]).then(() => { checkWinner(); }); }, 60);
         }
-        function stopDualGame() {
-            if (intervalId) clearInterval(intervalId);
-            game1.active = false;
-            game2.active = false;
-        }
+        function stopDualGame() { if (intervalId) clearInterval(intervalId); game1.active = false; game2.active = false; }
         function checkWinner() {
             if (!game1.active && !game2.active) {
                 stopDualGame();

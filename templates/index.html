@@ -1,40 +1,36 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Snake AI Visualization</title>
+    <title>Snake AI Visualization (Big Mode)</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
     <style>
-        /* 1. KHAI BÁO FONT AKIRA */
         @font-face {
             font-family: 'Akira';
-            src: url("/pictures/akiraexpanded.otf") format('opentype');
+            src: url("/static/akiraexpanded.otf") format('opentype');
         }
 
         :root {
-            --bg-color: #121212;
-            --card-bg: rgba(30, 30, 30, 0.85); /* Nền mờ */
+            --bg-color: #0a0a0a;
+            --card-bg: #1e1e1e;
             --text-color: #e0e0e0;
-            --accent-color: #4CAF50;
-            
-            /* Màu cho từng nút */
-            --btn-astar: #2196F3;
-            --btn-hybrid: #00BCD4;
-            --btn-hamilton: #9C27B0;
-            --btn-rl: #FF9800;
+            --neon-green: #4CAF50;
         }
 
         body {
             background-color: var(--bg-color);
             
-            /* --- CẬP NHẬT ẢNH NỀN RIÊNG CHO SINGLE MODE --- */
-            background-image: url("/pictures/bg_snake2.png");
+            /* --- TẠO BACKGROUND TECH GRID BẰNG CSS (KHÔNG CẦN ẢNH) --- */
+            background-image: 
+                linear-gradient(rgba(76, 175, 80, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(76, 175, 80, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px; /* Kích thước ô lưới */
             
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: cover;
-            background-attachment: fixed;
-
+            /* Hiệu ứng tối dần ở 4 góc (Vignette) để tập trung vào giữa */
+            box-shadow: inset 0 0 200px rgba(0,0,0,0.9);
+            
             color: var(--text-color);
             font-family: 'Roboto Mono', monospace;
             display: flex;
@@ -45,183 +41,164 @@
             min-height: 100vh;
         }
 
-        /* Tiêu đề dùng font Akira */
-        h1 { 
-            font-family: 'Akira', sans-serif !important; 
-            margin-bottom: 5px; 
-            color: #fff; 
-            text-shadow: 0 4px 10px rgba(0,0,0,0.8);
+        .header-container { text-align: center; margin-bottom: 20px; z-index: 2; }
+
+        h1 {
+            font-family: 'Akira', sans-serif !important;
+            color: var(--neon-green);
             font-size: 2.5rem;
-            text-transform: uppercase;
+            margin: 0;
+            text-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
             letter-spacing: 2px;
-            text-align: center;
+            text-transform: uppercase;
         }
 
-        .nav-link { 
-            color: #ddd; 
-            text-decoration: none; 
-            margin-bottom: 25px; 
-            font-size: 0.9rem; 
-            text-shadow: 1px 1px 2px #000;
-            padding: 5px 10px;
-            background: rgba(0,0,0,0.5);
+        .nav-link {
+            display: inline-block;
+            margin-top: 10px;
+            color: #ccc;
+            text-decoration: none;
+            font-size: 0.9rem;
+            border: 1px solid #444;
+            padding: 5px 15px;
             border-radius: 4px;
+            background: rgba(0,0,0,0.8);
+            transition: 0.3s;
         }
-        .nav-link:hover { color: #fff; background: rgba(255,255,255,0.2); }
+        .nav-link:hover {
+            background: var(--neon-green);
+            color: #000;
+            border-color: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+        }
 
-        .container {
+        .main-container {
             display: flex;
             gap: 40px;
-            flex-wrap: wrap;
             justify-content: center;
             align-items: flex-start;
             width: 100%;
-            max-width: 1200px;
+            max-width: 1600px;
+            flex-wrap: wrap;
+            z-index: 2;
         }
 
-        /* --- STYLE CHUNG CHO CÁC KHUNG (CARD) --- */
-        .glass-card {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-            backdrop-filter: blur(5px);
-            border-top: 4px solid #555;
-        }
+        .game-section { display: flex; flex-direction: column; width: 640px; }
 
-        /* KHU VỰC GAME */
-        .game-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        canvas {
-            background-color: #000;
-            border: 2px solid #444;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        .canvas-wrapper {
+            padding: 5px;
+            border: 2px solid var(--neon-green);
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.3);
             border-radius: 4px;
+            background: #000;
         }
 
-        .stats {
+        canvas { display: block; background-color: #000; }
+
+        .scoreboard {
             margin-top: 15px;
-            font-size: 1rem;
-            color: #ccc;
-            width: 100%;
+            background-color: #333;
+            color: #fff;
+            padding: 15px;
+            border-radius: 6px;
             text-align: center;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #444;
-            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid #444;
         }
-        .highlight-score { color: #fff; font-weight: bold; font-size: 1.2rem; }
+        
+        .score-val { color: var(--neon-green); margin-left: 5px; }
 
-        .controls {
+        .controls-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            width: 100%;
+            gap: 10px;
+            margin-top: 15px;
         }
 
         button {
-            padding: 15px;
-            font-family: 'Akira', sans-serif !important; /* Nút dùng font Akira */
-            font-size: 0.75rem; /* Font này to nên giảm size */
-            font-weight: normal;
-            cursor: pointer;
-            border: none;
-            border-radius: 6px;
-            transition: 0.2s;
-            color: white;
-            text-transform: uppercase;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            letter-spacing: 1px;
-        }
-
-        .btn-astar { background-color: var(--btn-astar); }
-        .btn-hybrid { background-color: var(--btn-hybrid); color: #000; }
-        .btn-hamilton { background-color: var(--btn-hamilton); }
-        .btn-rl { background-color: var(--btn-rl); }
-        
-        .btn-stop { 
-            background-color: #f44336; 
-            grid-column: span 2; 
-            margin-top: 5px; 
-            font-size: 0.9rem;
-        }
-        
-        button:hover { transform: translateY(-2px); filter: brightness(1.1); }
-        button:active { transform: translateY(0); }
-        
-        button.active { 
-            box-shadow: 0 0 15px currentColor; 
-            border: 2px solid white; 
-            transform: scale(1.02);
-        }
-
-        /* BẢNG SO SÁNH */
-        .comparison-area {
-            flex: 1;
-            min-width: 300px;
-            max-width: 600px;
-        }
-
-        .comparison-area h3 { 
-            margin-top: 0; 
-            color: #fff; 
-            border-bottom: 2px solid #555; 
-            padding-bottom: 15px;
             font-family: 'Akira', sans-serif !important;
-            font-size: 1rem;
-            text-align: center;
-            letter-spacing: 1px;
+            padding: 15px;
+            font-size: 0.8rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            color: #fff;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: filter 0.2s;
         }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        th, td {
-            padding: 12px 10px;
-            text-align: left;
-            border-bottom: 1px solid #444;
-            font-size: 0.85rem;
-        }
-
-        th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+        button:hover { filter: brightness(1.2); transform: translateY(-2px); }
         
-        /* Màu tiêu đề cột */
-        th.col-astar { color: var(--btn-astar); }
-        th.col-hybrid { color: var(--btn-hybrid); }
-        th.col-hamilton { color: var(--btn-hamilton); }
-        th.col-rl { color: var(--btn-rl); }
+        .btn-astar { background-color: #2196F3; }
+        .btn-hybrid { background-color: #00BCD4; color: #000; }
+        .btn-hamilton { background-color: #9C27B0; }
+        .btn-rl { background-color: #FF9800; color: #000; }
+        .btn-stop { grid-column: span 2; background-color: #f44336; font-size: 1rem; margin-top: 5px; }
 
-        tr:last-child td { border-bottom: none; }
-        tr:hover { background-color: rgba(255,255,255,0.05); }
+        .info-section {
+            flex: 1;
+            min-width: 450px;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            border: 1px solid #333;
+        }
 
-        .bad { color: #ff5252; }
-        .good { color: #69f0ae; }
-        .best { color: #FFD700; font-weight: bold; }
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+
+        .panel-header h3 {
+            margin: 0;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .comparison-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        .comparison-table th { text-align: left; padding: 12px 5px; color: #888; text-transform: uppercase; font-size: 0.75rem; border-bottom: 1px solid #444; }
+        .comparison-table td { padding: 15px 5px; border-bottom: 1px solid #333; vertical-align: middle; }
+        .comparison-table tr:last-child td { border-bottom: none; }
+
+        .col-astar { color: #2196F3; font-weight: bold; }
+        .col-hybrid { color: #00BCD4; font-weight: bold; }
+        .col-hamilton { color: #9C27B0; font-weight: bold; }
+        .col-dql { color: #FF9800; font-weight: bold; }
+
+        .val-bad { color: #f44336; }
+        .val-good { color: #4CAF50; }
+        .val-best { color: #fff; font-weight: bold; }
+        .val-avg { color: #ccc; }
+
     </style>
 </head>
 <body>
+    <div class="header-container">
+        <h1><i class="fas fa-snake" style="margin-right: 15px;"></i> Snake AI Visualization</h1>
+        <a href="/compare" class="nav-link"><i class="fas fa-balance-scale"></i> Go to Dual Comparison Mode</a>
+    </div>
 
-    <h1>Snake AI Visualization</h1>
-    <a href="/compare" class="nav-link">→ Go to Dual Comparison Mode</a>
-
-    <div class="container">
-        
-        <!-- LEFT: GAME AREA -->
-        <div class="game-area glass-card">
-            <canvas id="gameCanvas" width="400" height="400"></canvas>
-            
-            <div class="stats">
-                <div>SCORE: <span id="score" class="highlight-score" style="color: var(--accent-color)">0</span></div>
-                <div style="margin-top:5px; font-size: 0.8rem;">Algorithm: <span id="algo-name" style="color: #fff;">Ready</span></div>
+    <div class="main-container">
+        <!-- GAME SECTION -->
+        <div class="game-section">
+            <div class="canvas-wrapper">
+                <canvas id="gameCanvas" width="640" height="480"></canvas>
             </div>
-
-            <div class="controls">
+            <div class="scoreboard">
+                Score: <span id="score" class="score-val">0</span>
+                <span style="color: #666; margin: 0 10px;">|</span>
+                Algo: <span id="algo-name" style="color: #fff;">Ready</span>
+            </div>
+            <div class="controls-grid">
                 <button class="btn-astar" onclick="startGame('astar')">Basic A*</button>
                 <button class="btn-hybrid" onclick="startGame('hybrid')">Hybrid A*</button>
                 <button class="btn-hamilton" onclick="startGame('hamilton')">Hamiltonian</button>
@@ -230,54 +207,57 @@
             </div>
         </div>
 
-        <!-- RIGHT: COMPARISON TABLE -->
-        <div class="comparison-area glass-card">
-            <h3>Algorithm Performance</h3>
-            <table>
+        <!-- INFO SECTION -->
+        <div class="info-section">
+            <div class="panel-header">
+                <i class="fas fa-chart-bar" style="color: #4CAF50;"></i>
+                <h3>So sánh Hiệu suất Thuật toán</h3>
+            </div>
+            <table class="comparison-table">
                 <thead>
                     <tr>
-                        <th>Criteria</th>
-                        <th class="col-astar">A*</th>
-                        <th class="col-hybrid">Hybrid</th>
-                        <th class="col-hamilton">Hamilton</th>
-                        <th class="col-rl">DQL</th>
+                        <th style="width: 20%;">TIÊU CHÍ</th>
+                        <th class="col-astar">BASIC A*</th>
+                        <th class="col-hybrid">HYBRID (A*++)</th>
+                        <th class="col-hamilton">HAMILTONIAN</th>
+                        <th class="col-dql">DEEP Q-LEARNING</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td><strong>Max Score</strong></td>
-                        <td class="bad">Low</td>
-                        <td class="good">High</td>
-                        <td class="best">Max</td>
-                        <td>High</td>
+                        <td class="val-bad">Thấp (Dễ chết)</td>
+                        <td class="val-good">Cao (Gần Max)</td>
+                        <td class="val-best">Tối đa (Max)</td>
+                        <td class="val-avg">Cao</td>
                     </tr>
                     <tr>
-                        <td><strong>Survival</strong></td>
-                        <td class="bad">Low</td>
-                        <td class="good">High</td>
-                        <td class="best">100%</td>
-                        <td>Varies</td>
+                        <td><strong>Survival Rate</strong></td>
+                        <td class="val-bad">Thấp (Kẹt góc)</td>
+                        <td class="val-good">Rất Cao (Safety)</td>
+                        <td class="val-best">100% (Tuyệt đối)</td>
+                        <td class="val-avg">Tùy model</td>
                     </tr>
                     <tr>
-                        <td><strong>Efficiency</strong></td>
-                        <td class="best">Optimal</td>
-                        <td class="good">Good</td>
-                        <td class="bad">Slow</td>
-                        <td>Avg</td>
+                        <td><strong>Steps / Food</strong></td>
+                        <td class="val-best">Tối ưu nhất</td>
+                        <td class="val-good">Tối ưu</td>
+                        <td class="val-bad">Rất nhiều (Tệ)</td>
+                        <td class="val-avg">Trung bình</td>
                     </tr>
                     <tr>
-                        <td><strong>Speed</strong></td>
-                        <td class="best">Fast</td>
-                        <td>Fast</td>
-                        <td class="best">Fast</td>
-                        <td class="bad">Slow</td>
+                        <td><strong>Computation</strong></td>
+                        <td class="val-best">Rất nhanh</td>
+                        <td class="val-good">Nhanh</td>
+                        <td class="val-good">Rất nhanh (Pre-calc)</td>
+                        <td class="val-bad">Chậm (Cần GPU)</td>
                     </tr>
                     <tr>
                         <td><strong>Logic</strong></td>
-                        <td>Shortest Path</td>
-                        <td>A* + Safety</td>
-                        <td>Cycle</td>
-                        <td>AI / ML</td>
+                        <td>Tìm đường ngắn nhất</td>
+                        <td>A* + BFS (Thoát hiểm)</td>
+                        <td>Chu trình cố định</td>
+                        <td>Học máy (Neural Net)</td>
                     </tr>
                 </tbody>
             </table>
@@ -289,59 +269,38 @@
         const ctx = canvas.getContext('2d');
         const scoreEl = document.getElementById('score');
         const algoNameEl = document.getElementById('algo-name');
-
         const CELL_SIZE = 20;
-        const GRID_W = canvas.width / CELL_SIZE;
+        const GRID_W = canvas.width / CELL_SIZE; 
         const GRID_H = canvas.height / CELL_SIZE;
-
-        let snake = [];
-        let food = {};
-        let currentAlgo = '';
-        let gameInterval = null;
-        let isProcessing = false;
+        let snake = [], food = {}, currentAlgo = '', gameInterval = null, isProcessing = false;
 
         function initGame() {
-            snake = [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}];
+            snake = [{x: 15, y: 12}, {x: 14, y: 12}, {x: 13, y: 12}];
             spawnFood();
             draw();
         }
 
         function spawnFood() {
             while (true) {
-                food = {
-                    x: Math.floor(Math.random() * GRID_W),
-                    y: Math.floor(Math.random() * GRID_H)
-                };
-                let onSnake = false;
-                for (let segment of snake) {
-                    if (segment.x === food.x && segment.y === food.y) {
-                        onSnake = true;
-                        break;
-                    }
-                }
-                if (!onSnake) break;
+                food = {x: Math.floor(Math.random()*GRID_W), y: Math.floor(Math.random()*GRID_H)};
+                if (!snake.some(s => s.x === food.x && s.y === food.y)) break;
             }
         }
 
         function draw() {
-            // Background
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
             // Food
-            ctx.fillStyle = '#FF5252';
+            ctx.fillStyle = '#ff4444';
+            ctx.shadowBlur = 15; ctx.shadowColor = "red";
             ctx.fillRect(food.x * CELL_SIZE, food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-
+            ctx.shadowBlur = 0;
             // Snake
             snake.forEach((segment, index) => {
-                if (index === 0) {
-                    ctx.fillStyle = '#4CAF50'; // Head
-                } else {
-                    ctx.fillStyle = '#81C784'; // Body
-                }
+                ctx.fillStyle = index === 0 ? '#4CAF50' : '#81C784';
+                if(index===0) { ctx.shadowBlur=10; ctx.shadowColor="#4CAF50"; }
                 ctx.fillRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-                
-                // Grid line effect
+                ctx.shadowBlur = 0;
                 ctx.strokeStyle = '#121212';
                 ctx.strokeRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
             });
@@ -350,98 +309,38 @@
         async function gameStep() {
             if (isProcessing) return;
             isProcessing = true;
-
-            const payload = {
-                snake: snake.map(s => [s.x, s.y]),
-                food: [food.x, food.y],
-                board_size: {width: GRID_W, height: GRID_H},
-                algorithm: currentAlgo
-            };
-
+            const payload = {snake: snake.map(s=>[s.x, s.y]), food: [food.x, food.y], board_size: {width: GRID_W, height: GRID_H}, algorithm: currentAlgo};
             try {
-                // Call API (using port 8001)
-                const response = await fetch('http://127.0.0.1:8001/predict', { 
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
-                
+                const response = await fetch('http://127.0.0.1:8001/predict', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
                 const data = await response.json();
-                const move = data.move; 
-
-                if (move[0] === 0 && move[1] === 0) {
-                    stopGame();
-                    alert(`Game Over! Score: ${scoreEl.innerText} (Stuck)`);
-                    return;
-                }
-
+                const move = data.move;
+                if (move[0] === 0 && move[1] === 0) { stopGame(); alert(`Game Over! Score: ${scoreEl.innerText} (Stuck)`); return; }
                 const head = snake[0];
                 const newHead = {x: head.x + move[0], y: head.y + move[1]};
-
-                // Check Wall
-                if(newHead.x < 0 || newHead.x >= GRID_W || newHead.y < 0 || newHead.y >= GRID_H) {
-                    stopGame();
-                    alert(`Game Over! Score: ${scoreEl.innerText} (Hit Wall)`);
-                    return;
+                if(newHead.x < 0 || newHead.x >= GRID_W || newHead.y < 0 || newHead.y >= GRID_H || snake.some(s=>s.x===newHead.x && s.y===newHead.y)) {
+                    stopGame(); alert(`Game Over! Score: ${scoreEl.innerText}`); return;
                 }
-                
-                // Check Self
-                for (let s of snake) {
-                     if (newHead.x === s.x && newHead.y === s.y) {
-                        stopGame();
-                        alert(`Game Over! Score: ${scoreEl.innerText} (Hit Body)`);
-                        return;
-                     }
-                }
-
                 snake.unshift(newHead);
-
-                if (newHead.x === food.x && newHead.y === food.y) {
-                    scoreEl.innerText = parseInt(scoreEl.innerText) + 1;
-                    spawnFood();
-                } else {
-                    snake.pop();
-                }
-
+                if (newHead.x === food.x && newHead.y === food.y) { scoreEl.innerText = parseInt(scoreEl.innerText)+1; spawnFood(); } else { snake.pop(); }
                 draw();
-
-            } catch (error) {
-                console.error("Error:", error);
-                stopGame();
-            }
-            
+            } catch (error) { console.error("Error:", error); stopGame(); }
             isProcessing = false;
         }
 
         function startGame(algo) {
             stopGame();
             currentAlgo = algo;
-            
-            document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-            document.querySelector(`.btn-${algo}`).classList.add('active');
-            
-            let nameDisplay = "";
-            let speed = 60; 
-
-            if(algo === 'astar') { nameDisplay = "Basic A*"; speed = 80; }
-            if(algo === 'hybrid') { nameDisplay = "Hybrid A*"; speed = 50; } 
-            if(algo === 'hamilton') { nameDisplay = "Hamiltonian Cycle"; speed = 20; } 
-            if(algo === 'rl') { nameDisplay = "Deep Q-Learning"; speed = 60; }
-            
-            algoNameEl.innerText = nameDisplay;
-            initGame();
-            scoreEl.innerText = 0;
-
+            let name = ""; let speed = 60;
+            if(algo === 'astar') { name="Basic A*"; speed=80; }
+            if(algo === 'hybrid') { name="Hybrid A*"; speed=50; } 
+            if(algo === 'hamilton') { name="Hamiltonian"; speed=20; } 
+            if(algo === 'rl') { name="Deep Q-Learning"; speed=60; }
+            algoNameEl.innerText = name;
+            initGame(); scoreEl.innerText = 0;
             gameInterval = setInterval(gameStep, speed);
         }
 
-        function stopGame() {
-            clearInterval(gameInterval);
-            isProcessing = false;
-            algoNameEl.innerText = "Stopped";
-            document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-        }
-
+        function stopGame() { clearInterval(gameInterval); isProcessing=false; algoNameEl.innerText="Stopped"; }
         initGame();
     </script>
 </body>
