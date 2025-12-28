@@ -5,27 +5,60 @@
     <title>Snake AI - Dual Comparison</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        /* 1. KHAI BÁO FONT AKIRA */
+        @font-face {
+            font-family: 'Akira';
+            src: url("/pictures/akiraexpanded.otf") format('opentype');
+        }
+
         :root {
             --bg-color: #121212;
-            --card-bg: #1e1e1e;
+            --card-bg: rgba(30, 30, 30, 0.85); /* Nền mờ cho khung game */
             --text-color: #e0e0e0;
-            --accent-1: #00E5FF; /* Cyan for Game 1 */
-            --accent-2: #FF4081; /* Pink for Game 2 */
+            --accent-1: #00E5FF;
+            --accent-2: #FF4081;
         }
 
         body {
+            /* Cấu hình ảnh nền */
             background-color: var(--bg-color);
+            background-image: url("/pictures/bg_snake.png");
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: cover;
+            background-attachment: fixed;
+
             color: var(--text-color);
-            font-family: 'Roboto Mono', monospace;
+            font-family: 'Roboto Mono', monospace; /* Font mặc định cho nội dung */
             display: flex;
             flex-direction: column;
             align-items: center;
             margin: 0;
             padding: 20px;
+            min-height: 100vh;
         }
 
-        h1 { color: #fff; margin-bottom: 5px; text-shadow: 0 0 10px rgba(255,255,255,0.2); }
-        .nav-link { color: #888; text-decoration: none; margin-bottom: 20px; font-size: 0.9rem; }
+        /* TIÊU ĐỀ: Dùng font Akira nhưng bỏ hiệu ứng màu mè */
+        h1 { 
+            font-family: 'Akira', sans-serif !important; 
+            color: #fff; 
+            font-size: 2.5rem; 
+            margin-bottom: 10px; 
+            text-transform: uppercase;
+            text-align: center;
+            
+            /* Chỉ để bóng mờ nhẹ màu đen cho dễ đọc trên ảnh nền, không làm bóng dày */
+            text-shadow: 0 4px 10px rgba(0,0,0,0.8); 
+            letter-spacing: 2px;
+        }
+
+        .nav-link { 
+            color: #ddd; 
+            text-decoration: none; 
+            margin-bottom: 20px; 
+            font-size: 0.9rem; 
+            text-shadow: 1px 1px 2px #000;
+        }
         .nav-link:hover { color: #fff; text-decoration: underline; }
 
         .dual-container {
@@ -40,12 +73,13 @@
             background: var(--card-bg);
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
             display: flex;
             flex-direction: column;
             align-items: center;
             border-top: 4px solid #555;
             width: 400px;
+            backdrop-filter: blur(4px); /* Làm mờ nền phía sau card một chút cho đẹp */
         }
 
         .game-card.p1 { border-color: var(--accent-1); }
@@ -74,7 +108,7 @@
             justify-content: space-between;
             width: 100%;
             font-size: 0.9rem;
-            color: #aaa;
+            color: #ccc;
         }
         .score-val { font-weight: bold; font-size: 1.2rem; color: #fff; }
 
@@ -85,33 +119,40 @@
         }
 
         button.btn-main {
+            /* Nút bấm dùng font Akira cho đồng bộ nhưng đơn giản */
+            font-family: 'Akira', sans-serif !important;
             padding: 15px 40px;
-            font-size: 1.2rem;
-            font-weight: bold;
+            font-size: 0.9rem; /* Chữ Akira to ngang nên giảm size chút */
+            
             cursor: pointer;
             border: none;
             border-radius: 8px;
             transition: 0.2s;
             text-transform: uppercase;
+            color: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
-        .btn-start { background-color: #4CAF50; color: white; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); }
+        .btn-start { background-color: #4CAF50; }
         .btn-start:hover { transform: scale(1.05); background-color: #43A047; }
         
-        .btn-stop { background-color: #f44336; color: white; }
+        .btn-stop { background-color: #f44336; }
         .btn-stop:hover { background-color: #d32f2f; }
 
         .winner-banner {
-            margin-top: 10px;
-            height: 24px;
+            margin-top: 15px;
+            height: 30px;
             font-weight: bold;
             color: #FFD700;
+            font-family: 'Akira', sans-serif !important;
+            font-size: 1.2rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
         }
     </style>
 </head>
 <body>
 
-    <h1>⚔️ Algorithm Arena ⚔️</h1>
+    <h1>Algorithm Arena</h1>
     <a href="/" class="nav-link">← Back to Single Mode</a>
 
     <div class="dual-container">
@@ -157,9 +198,7 @@
     </div>
 
     <script>
-        const CELL_SIZE = 20; // 360/20 = 18x18 grid
-        
-        // Class managing a single game instance
+        const CELL_SIZE = 20; 
         class SnakeInstance {
             constructor(canvasId, scoreId, statusId, color) {
                 this.canvas = document.getElementById(canvasId);
@@ -167,16 +206,13 @@
                 this.scoreEl = document.getElementById(scoreId);
                 this.statusEl = document.getElementById(statusId);
                 this.color = color;
-                
                 this.GRID_W = this.canvas.width / CELL_SIZE;
                 this.GRID_H = this.canvas.height / CELL_SIZE;
-                
                 this.snake = [];
                 this.food = {};
                 this.active = false;
                 this.score = 0;
             }
-
             init() {
                 this.snake = [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}];
                 this.spawnFood();
@@ -186,7 +222,6 @@
                 this.statusEl.innerText = "Running...";
                 this.draw();
             }
-
             spawnFood() {
                 while (true) {
                     this.food = {
@@ -197,24 +232,17 @@
                     if (!onSnake) break;
                 }
             }
-
             draw() {
-                // Clear
                 this.ctx.fillStyle = '#000';
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-
                 if (!this.active) {
                     this.ctx.fillStyle = '#333';
                     this.ctx.font = '20px monospace';
                     this.ctx.fillText("GAME OVER", 130, 180);
                     return;
                 }
-
-                // Food
                 this.ctx.fillStyle = '#FF5252';
                 this.ctx.fillRect(this.food.x * CELL_SIZE, this.food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-
-                // Snake
                 this.snake.forEach((segment, index) => {
                     this.ctx.fillStyle = index === 0 ? '#fff' : this.color;
                     this.ctx.fillRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
@@ -222,46 +250,28 @@
                     this.ctx.strokeRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 });
             }
-
             async update(algo) {
                 if (!this.active) return;
-
                 const payload = {
                     snake: this.snake.map(s => [s.x, s.y]),
                     food: [this.food.x, this.food.y],
                     board_size: {width: this.GRID_W, height: this.GRID_H},
                     algorithm: algo
                 };
-
                 try {
-                    // Call API (Using port 8001 as previously configured)
                     const response = await fetch('http://127.0.0.1:8001/predict', { 
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify(payload)
                     });
-                    
                     const data = await response.json();
-                    const move = data.move; // [dx, dy]
-
-                    if (move[0] === 0 && move[1] === 0) {
-                        this.die("Stuck"); return;
-                    }
-
+                    const move = data.move; 
+                    if (move[0] === 0 && move[1] === 0) { this.die("Stuck"); return; }
                     const head = this.snake[0];
                     const newHead = {x: head.x + move[0], y: head.y + move[1]};
-
-                    // Check Wall
-                    if(newHead.x < 0 || newHead.x >= this.GRID_W || newHead.y < 0 || newHead.y >= this.GRID_H) {
-                        this.die("Hit Wall"); return;
-                    }
-                    // Check Body
-                    if (this.snake.some(s => s.x === newHead.x && s.y === newHead.y)) {
-                        this.die("Hit Body"); return;
-                    }
-
+                    if(newHead.x < 0 || newHead.x >= this.GRID_W || newHead.y < 0 || newHead.y >= this.GRID_H) { this.die("Hit Wall"); return; }
+                    if (this.snake.some(s => s.x === newHead.x && s.y === newHead.y)) { this.die("Hit Body"); return; }
                     this.snake.unshift(newHead);
-
                     if (newHead.x === this.food.x && newHead.y === this.food.y) {
                         this.score++;
                         this.scoreEl.innerText = this.score;
@@ -270,13 +280,8 @@
                         this.snake.pop();
                     }
                     this.draw();
-
-                } catch (e) {
-                    console.error(e);
-                    this.active = false;
-                }
+                } catch (e) { console.error(e); this.active = false; }
             }
-
             die(reason) {
                 this.active = false;
                 this.statusEl.innerText = `Dead (${reason})`;
@@ -284,41 +289,25 @@
                 this.draw();
             }
         }
-
-        // --- MAIN LOGIC ---
         const game1 = new SnakeInstance('canvas1', 'score1', 'status1', '#00E5FF');
         const game2 = new SnakeInstance('canvas2', 'score2', 'status2', '#FF4081');
         let intervalId = null;
-
         function startDualGame() {
             stopDualGame();
-            
             game1.init();
             game2.init();
             document.getElementById('winnnerMsg').innerText = "";
-
             const algo1 = document.getElementById('algo1').value;
             const algo2 = document.getElementById('algo2').value;
-
-            // Run game loop
-            // Speed 60ms for smoothness
             intervalId = setInterval(async () => {
-                // Run in parallel
-                Promise.all([
-                    game1.update(algo1),
-                    game2.update(algo2)
-                ]).then(() => {
-                    checkWinner();
-                });
+                Promise.all([game1.update(algo1), game2.update(algo2)]).then(() => { checkWinner(); });
             }, 60);
         }
-
         function stopDualGame() {
             if (intervalId) clearInterval(intervalId);
             game1.active = false;
             game2.active = false;
         }
-
         function checkWinner() {
             if (!game1.active && !game2.active) {
                 stopDualGame();

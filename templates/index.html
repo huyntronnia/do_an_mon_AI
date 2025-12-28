@@ -1,22 +1,40 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>Snake AI Visualization</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        /* 1. KHAI BÁO FONT AKIRA */
+        @font-face {
+            font-family: 'Akira';
+            src: url("/pictures/akiraexpanded.otf") format('opentype');
+        }
+
         :root {
-            --bg-color: #1a1a1a;
+            --bg-color: #121212;
+            --card-bg: rgba(30, 30, 30, 0.85); /* Nền mờ */
             --text-color: #e0e0e0;
             --accent-color: #4CAF50;
+            
+            /* Màu cho từng nút */
             --btn-astar: #2196F3;
-            --btn-hybrid: #00BCD4; /* Màu Cyan cho Hybrid */
+            --btn-hybrid: #00BCD4;
             --btn-hamilton: #9C27B0;
             --btn-rl: #FF9800;
         }
 
         body {
             background-color: var(--bg-color);
+            
+            /* --- CẬP NHẬT ẢNH NỀN RIÊNG CHO SINGLE MODE --- */
+            background-image: url("/pictures/bg_snake2.png");
+            
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: cover;
+            background-attachment: fixed;
+
             color: var(--text-color);
             font-family: 'Roboto Mono', monospace;
             display: flex;
@@ -24,9 +42,32 @@
             align-items: center;
             margin: 0;
             padding: 20px;
+            min-height: 100vh;
         }
 
-        h1 { margin-bottom: 20px; color: var(--accent-color); text-shadow: 0 0 10px rgba(76, 175, 80, 0.3); }
+        /* Tiêu đề dùng font Akira */
+        h1 { 
+            font-family: 'Akira', sans-serif !important; 
+            margin-bottom: 5px; 
+            color: #fff; 
+            text-shadow: 0 4px 10px rgba(0,0,0,0.8);
+            font-size: 2.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        .nav-link { 
+            color: #ddd; 
+            text-decoration: none; 
+            margin-bottom: 25px; 
+            font-size: 0.9rem; 
+            text-shadow: 1px 1px 2px #000;
+            padding: 5px 10px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 4px;
+        }
+        .nav-link:hover { color: #fff; background: rgba(255,255,255,0.2); }
 
         .container {
             display: flex;
@@ -34,9 +75,21 @@
             flex-wrap: wrap;
             justify-content: center;
             align-items: flex-start;
+            width: 100%;
+            max-width: 1200px;
         }
 
-        /* Khu vực Game */
+        /* --- STYLE CHUNG CHO CÁC KHUNG (CARD) --- */
+        .glass-card {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            border-top: 4px solid #555;
+        }
+
+        /* KHU VỰC GAME */
         .game-area {
             display: flex;
             flex-direction: column;
@@ -45,110 +98,127 @@
 
         canvas {
             background-color: #000;
-            border: 4px solid var(--accent-color);
-            box-shadow: 0 0 20px rgba(76, 175, 80, 0.5);
+            border: 2px solid #444;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
             border-radius: 4px;
         }
 
+        .stats {
+            margin-top: 15px;
+            font-size: 1rem;
+            color: #ccc;
+            width: 100%;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #444;
+            margin-bottom: 15px;
+        }
+        .highlight-score { color: #fff; font-weight: bold; font-size: 1.2rem; }
+
         .controls {
-            margin-top: 20px;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 15px;
             width: 100%;
         }
 
         button {
-            padding: 12px;
-            font-family: inherit;
-            font-weight: bold;
+            padding: 15px;
+            font-family: 'Akira', sans-serif !important; /* Nút dùng font Akira */
+            font-size: 0.75rem; /* Font này to nên giảm size */
+            font-weight: normal;
             cursor: pointer;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             transition: 0.2s;
             color: white;
             text-transform: uppercase;
-            font-size: 0.9rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            letter-spacing: 1px;
         }
 
         .btn-astar { background-color: var(--btn-astar); }
-        .btn-hybrid { background-color: var(--btn-hybrid); color: #000; } /* Chữ đen cho dễ đọc trên nền sáng */
+        .btn-hybrid { background-color: var(--btn-hybrid); color: #000; }
         .btn-hamilton { background-color: var(--btn-hamilton); }
         .btn-rl { background-color: var(--btn-rl); }
-        .btn-stop { background-color: #f44336; grid-column: span 2; margin-top: 5px; }
         
-        button:hover { opacity: 0.8; transform: translateY(-2px); }
+        .btn-stop { 
+            background-color: #f44336; 
+            grid-column: span 2; 
+            margin-top: 5px; 
+            font-size: 0.9rem;
+        }
+        
+        button:hover { transform: translateY(-2px); filter: brightness(1.1); }
         button:active { transform: translateY(0); }
         
         button.active { 
             box-shadow: 0 0 15px currentColor; 
             border: 2px solid white; 
-            transform: scale(1.05);
+            transform: scale(1.02);
         }
 
-        .stats {
-            margin-top: 15px;
-            font-size: 1.2rem;
-            background: #333;
-            padding: 10px 20px;
-            border-radius: 8px;
-            width: 100%;
+        /* BẢNG SO SÁNH */
+        .comparison-area {
+            flex: 1;
+            min-width: 300px;
+            max-width: 600px;
+        }
+
+        .comparison-area h3 { 
+            margin-top: 0; 
+            color: #fff; 
+            border-bottom: 2px solid #555; 
+            padding-bottom: 15px;
+            font-family: 'Akira', sans-serif !important;
+            font-size: 1rem;
             text-align: center;
-            box-sizing: border-box;
+            letter-spacing: 1px;
         }
-
-        /* Bảng so sánh */
-        .comparison-table {
-            max-width: 800px; /* Mở rộng chiều ngang */
-            background-color: #2d2d2d;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        }
-
-        .comparison-table h3 { margin-top: 0; color: #fff; border-bottom: 2px solid #444; padding-bottom: 10px; }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 10px;
         }
 
         th, td {
-            padding: 15px 10px;
+            padding: 12px 10px;
             text-align: left;
             border-bottom: 1px solid #444;
             font-size: 0.85rem;
         }
 
-        th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
+        th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
         
-        /* Màu tiêu đề cột tương ứng với nút */
+        /* Màu tiêu đề cột */
         th.col-astar { color: var(--btn-astar); }
         th.col-hybrid { color: var(--btn-hybrid); }
         th.col-hamilton { color: var(--btn-hamilton); }
         th.col-rl { color: var(--btn-rl); }
 
         tr:last-child td { border-bottom: none; }
-        tr:hover { background-color: #383838; }
+        tr:hover { background-color: rgba(255,255,255,0.05); }
 
-        .highlight { font-weight: bold; color: #fff; }
         .bad { color: #ff5252; }
         .good { color: #69f0ae; }
+        .best { color: #FFD700; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1>🐍 Snake AI Visualization</h1>
+    <h1>Snake AI Visualization</h1>
+    <a href="/compare" class="nav-link">→ Go to Dual Comparison Mode</a>
 
     <div class="container">
-        <!-- GAME SECTION -->
-        <div class="game-area">
-            <canvas id="gameCanvas" width="640" height="480"></canvas>
+        
+        <!-- LEFT: GAME AREA -->
+        <div class="game-area glass-card">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
             
             <div class="stats">
-                Score: <span id="score" style="color: var(--accent-color)">0</span> <br>
-                Algo: <span id="algo-name">Ready</span>
+                <div>SCORE: <span id="score" class="highlight-score" style="color: var(--accent-color)">0</span></div>
+                <div style="margin-top:5px; font-size: 0.8rem;">Algorithm: <span id="algo-name" style="color: #fff;">Ready</span></div>
             </div>
 
             <div class="controls">
@@ -156,58 +226,58 @@
                 <button class="btn-hybrid" onclick="startGame('hybrid')">Hybrid A*</button>
                 <button class="btn-hamilton" onclick="startGame('hamilton')">Hamiltonian</button>
                 <button class="btn-rl" onclick="startGame('rl')">Deep Q-Learning</button>
-                <button class="btn-stop" onclick="stopGame()">Stop Game</button>
+                <button class="btn-stop" onclick="stopGame()">STOP GAME</button>
             </div>
         </div>
 
-        <!-- COMPARISON TABLE SECTION -->
-        <div class="comparison-table">
-            <h3>📊 So sánh Hiệu suất Thuật toán</h3>
+        <!-- RIGHT: COMPARISON TABLE -->
+        <div class="comparison-area glass-card">
+            <h3>Algorithm Performance</h3>
             <table>
                 <thead>
                     <tr>
-                        <th>Tiêu chí</th>
-                        <th class="col-astar">Basic A*</th>
-                        <th class="col-hybrid">Hybrid (A*++)</th>
-                        <th class="col-hamilton">Hamiltonian</th>
-                        <th class="col-rl">Deep Q-Learning</th>
+                        <th>Criteria</th>
+                        <th class="col-astar">A*</th>
+                        <th class="col-hybrid">Hybrid</th>
+                        <th class="col-hamilton">Hamilton</th>
+                        <th class="col-rl">DQL</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td><strong>Max Score</strong></td>
-                        <td class="bad">Thấp (Dễ chết)</td>
-                        <td class="good">Cao (Gần Max)</td>
-                        <td class="highlight">Tối đa (Max)</td>
-                        <td>Cao</td>
+                        <td class="bad">Low</td>
+                        <td class="good">High</td>
+                        <td class="best">Max</td>
+                        <td>High</td>
                     </tr>
                     <tr>
-                        <td><strong>Survival Rate</strong></td>
-                        <td class="bad">Thấp (Kẹt góc)</td>
-                        <td class="good">Rất Cao (Safety)</td>
-                        <td class="highlight">100% (Tuyệt đối)</td>
-                        <td>Tùy model</td>
+                        <td><strong>Survival</strong></td>
+                        <td class="bad">Low</td>
+                        <td class="good">High</td>
+                        <td class="best">100%</td>
+                        <td>Varies</td>
                     </tr>
                     <tr>
-                        <td><strong>Steps / Food</strong></td>
-                        <td class="highlight">Tối ưu nhất</td>
-                        <td class="good">Tối ưu</td>
-                        <td class="bad">Rất nhiều (Tệ)</td>
-                        <td>Trung bình</td>
+                        <td><strong>Efficiency</strong></td>
+                        <td class="best">Optimal</td>
+                        <td class="good">Good</td>
+                        <td class="bad">Slow</td>
+                        <td>Avg</td>
                     </tr>
                     <tr>
-                        <td><strong>Computation</strong></td>
-                        <td class="highlight">Rất nhanh</td>
-                        <td>Nhanh</td>
-                        <td>Rất nhanh (Pre-calc)</td>
-                        <td class="bad">Chậm (Cần GPU)</td>
+                        <td><strong>Speed</strong></td>
+                        <td class="best">Fast</td>
+                        <td>Fast</td>
+                        <td class="best">Fast</td>
+                        <td class="bad">Slow</td>
                     </tr>
                     <tr>
                         <td><strong>Logic</strong></td>
-                        <td>Tìm đường ngắn nhất</td>
-                        <td>A* + Breadth-first search - BFS (Thoát hiểm)</td>
-                        <td>Chu trình cố định</td>
-                        <td>Học máy (Neural Net)</td>
+                        <td>Shortest Path</td>
+                        <td>A* + Safety</td>
+                        <td>Cycle</td>
+                        <td>AI / ML</td>
                     </tr>
                 </tbody>
             </table>
@@ -231,7 +301,7 @@
         let isProcessing = false;
 
         function initGame() {
-            snake = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}];
+            snake = [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}];
             spawnFood();
             draw();
         }
@@ -242,7 +312,6 @@
                     x: Math.floor(Math.random() * GRID_W),
                     y: Math.floor(Math.random() * GRID_H)
                 };
-                // Check xem thức ăn có trùng thân rắn không
                 let onSnake = false;
                 for (let segment of snake) {
                     if (segment.x === food.x && segment.y === food.y) {
@@ -261,26 +330,19 @@
 
             // Food
             ctx.fillStyle = '#FF5252';
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = "red";
             ctx.fillRect(food.x * CELL_SIZE, food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-            ctx.shadowBlur = 0;
 
             // Snake
             snake.forEach((segment, index) => {
                 if (index === 0) {
                     ctx.fillStyle = '#4CAF50'; // Head
-                    ctx.shadowBlur = 10;
-                    ctx.shadowColor = "#4CAF50";
                 } else {
                     ctx.fillStyle = '#81C784'; // Body
-                    ctx.shadowBlur = 0;
                 }
                 ctx.fillRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 
                 // Grid line effect
-                ctx.strokeStyle = '#1a1a1a';
-                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#121212';
                 ctx.strokeRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
             });
         }
@@ -297,7 +359,7 @@
             };
 
             try {
-                // Lưu ý: Đổi port 8000 thành 8001 nếu bạn đang chạy port 8001
+                // Call API (using port 8001)
                 const response = await fetch('http://127.0.0.1:8001/predict', { 
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
@@ -309,24 +371,25 @@
 
                 if (move[0] === 0 && move[1] === 0) {
                     stopGame();
-                    alert(`Game Over! Score: ${scoreEl.innerText} (Rắn bị kẹt)`);
+                    alert(`Game Over! Score: ${scoreEl.innerText} (Stuck)`);
                     return;
                 }
 
                 const head = snake[0];
                 const newHead = {x: head.x + move[0], y: head.y + move[1]};
 
+                // Check Wall
                 if(newHead.x < 0 || newHead.x >= GRID_W || newHead.y < 0 || newHead.y >= GRID_H) {
                     stopGame();
-                    alert(`Game Over! Score: ${scoreEl.innerText} (Đâm tường)`);
+                    alert(`Game Over! Score: ${scoreEl.innerText} (Hit Wall)`);
                     return;
                 }
                 
-                // Check tự cắn đuôi
+                // Check Self
                 for (let s of snake) {
                      if (newHead.x === s.x && newHead.y === s.y) {
                         stopGame();
-                        alert(`Game Over! Score: ${scoreEl.innerText} (Cắn đuôi)`);
+                        alert(`Game Over! Score: ${scoreEl.innerText} (Hit Body)`);
                         return;
                      }
                 }
@@ -343,7 +406,7 @@
                 draw();
 
             } catch (error) {
-                console.error("Lỗi:", error);
+                console.error("Error:", error);
                 stopGame();
             }
             
@@ -358,11 +421,11 @@
             document.querySelector(`.btn-${algo}`).classList.add('active');
             
             let nameDisplay = "";
-            let speed = 60; // Tốc độ mặc định
+            let speed = 60; 
 
             if(algo === 'astar') { nameDisplay = "Basic A*"; speed = 80; }
-            if(algo === 'hybrid') { nameDisplay = "Hybrid (A*, DFS and Future Simulation)"; speed = 40; } // Nhanh hơn
-            if(algo === 'hamilton') { nameDisplay = "Hamiltonian Cycle"; speed = 15; } // Rất nhanh
+            if(algo === 'hybrid') { nameDisplay = "Hybrid A*"; speed = 50; } 
+            if(algo === 'hamilton') { nameDisplay = "Hamiltonian Cycle"; speed = 20; } 
             if(algo === 'rl') { nameDisplay = "Deep Q-Learning"; speed = 60; }
             
             algoNameEl.innerText = nameDisplay;
