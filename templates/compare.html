@@ -2,90 +2,157 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Snake AI - Dual Comparison</title>
+    <title>Snake AI - Algorithm Arena</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        /* FONTS & VARIABLES */
         @font-face { font-family: 'Akira'; src: url("/pictures/akiraexpanded.otf") format('opentype'); }
-        :root { --bg-color: #121212; --card-bg: rgba(30, 30, 30, 0.85); --text-color: #e0e0e0; --accent-1: #00E5FF; --accent-2: #FF4081; }
-        body { background-color: var(--bg-color); background-image: url("/pictures/bg_snake.png"); background-repeat: no-repeat; background-position: center; background-size: cover; background-attachment: fixed; color: var(--text-color); font-family: 'Roboto Mono', monospace; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; min-height: 100vh; }
-        h1 { font-family: 'Akira', sans-serif !important; color: #fff; font-size: 2.5rem; margin-bottom: 10px; text-transform: uppercase; text-align: center; text-shadow: 0 4px 10px rgba(0,0,0,0.8); letter-spacing: 2px; }
-        .nav-link { color: #ddd; text-decoration: none; margin-bottom: 20px; font-size: 0.9rem; text-shadow: 1px 1px 2px #000; }
-        .nav-link:hover { color: #fff; text-decoration: underline; }
-        .dual-container { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; width: 100%; }
-        .game-card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: 0 10px 20px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; border-top: 4px solid #555; width: auto; max-width: 95vw; backdrop-filter: blur(4px); }
-        .game-card.p1 { border-color: var(--accent-1); } .game-card.p2 { border-color: var(--accent-2); }
-        select { background: #333; color: white; padding: 8px; border: 1px solid #555; border-radius: 4px; font-family: inherit; margin-bottom: 10px; width: 100%; cursor: pointer; }
-        canvas { background-color: #000; border: 2px solid #333; margin-bottom: 10px; max-width: 100%; height: auto; }
-        .stats { display: flex; justify-content: space-between; width: 100%; font-size: 0.9rem; color: #ccc; }
+        :root { 
+            --bg-color: #0a0a0a; 
+            --card-bg: rgba(20, 20, 20, 0.9); 
+            --accent-1: #00E5FF; 
+            --accent-2: #FF4081; 
+            --text-color: #e0e0e0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: url("/pictures/bg_snake.png");
+            background-size: cover; background-attachment: fixed; background-position: center;
+            color: var(--text-color); font-family: 'Roboto Mono', monospace;
+            display: flex; flex-direction: column; align-items: center;
+            margin: 0; padding: 20px; min-height: 100vh;
+        }
+
+        h1 { font-family: 'Akira', sans-serif; color: #fff; margin-bottom: 5px; text-transform: uppercase; text-shadow: 0 4px 10px rgba(0,0,0,0.8); letter-spacing: 2px; }
+        .nav-link { color: #888; text-decoration: none; margin-bottom: 20px; font-size: 0.9rem; padding: 5px 15px; background: rgba(0,0,0,0.6); border-radius: 5px; transition: 0.3s; }
+        .nav-link:hover { color: #fff; background: rgba(255,255,255,0.2); }
+
+        .dual-container { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1400px; }
+
+        .game-card {
+            background: var(--card-bg); padding: 20px; border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            border-top: 4px solid #555;
+            display: flex; flex-direction: column; align-items: center;
+            backdrop-filter: blur(4px);
+        }
+        .game-card.p1 { border-color: var(--accent-1); }
+        .game-card.p2 { border-color: var(--accent-2); }
+
+        .player-header { width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; font-weight: bold; }
+        select { background: #333; color: white; padding: 8px; border: 1px solid #555; border-radius: 4px; cursor: pointer; font-family: inherit; }
+
+        canvas { background-color: #000; border: 2px solid #333; box-shadow: 0 0 15px rgba(0,0,0,0.5); max-width: 100%; height: auto; }
+
+        .stats { display: flex; justify-content: space-between; width: 100%; margin-top: 15px; font-size: 0.9rem; color: #bbb; }
         .score-val { font-weight: bold; font-size: 1.2rem; color: #fff; }
-        .main-controls { margin-top: 30px; display: flex; gap: 20px; }
-        button.btn-main { font-family: 'Akira', sans-serif !important; padding: 15px 40px; font-size: 0.9rem; cursor: pointer; border: none; border-radius: 8px; transition: 0.2s; text-transform: uppercase; color: white; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .btn-start { background-color: #4CAF50; } .btn-start:hover { transform: scale(1.05); background-color: #43A047; }
-        .btn-stop { background-color: #f44336; } .btn-stop:hover { background-color: #d32f2f; }
-        .winner-banner { margin-top: 15px; height: 30px; font-weight: bold; color: #FFD700; font-family: 'Akira', sans-serif !important; font-size: 1.2rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+
+        .controls { margin-top: 25px; display: flex; gap: 20px; }
+        button {
+            font-family: 'Akira', sans-serif; padding: 15px 35px; font-size: 0.85rem;
+            cursor: pointer; border: none; border-radius: 8px; color: white;
+            transition: 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.5); text-transform: uppercase;
+        }
+        .btn-start { background: linear-gradient(45deg, #4CAF50, #2E7D32); }
+        .btn-start:hover { transform: scale(1.05); filter: brightness(1.1); }
+        .btn-stop { background: linear-gradient(45deg, #F44336, #C62828); }
+        .btn-stop:hover { filter: brightness(1.1); }
+
+        #winnerMsg { height: 40px; margin-top: 15px; font-family: 'Akira'; color: #FFD700; font-size: 1.5rem; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
     </style>
 </head>
 <body>
+
     <h1>Algorithm Arena</h1>
     <a href="/" class="nav-link">← Back to Single Mode</a>
+
     <div class="dual-container">
-        <!-- PLAYER 1 -->
         <div class="game-card p1">
-            <label>PLAYER 1 (Cyan)</label>
-            <select id="algo1"> <option value="hybrid" selected>Hybrid A* (Smart)</option> <option value="rl">Deep Q-Learning</option> <option value="astar">Basic A* (Risky)</option> <option value="hamilton">Hamiltonian (Slow)</option> </select>
+            <div class="player-header">
+                <span style="color: var(--accent-1)">PLAYER 1 (Cyan)</span>
+                <select id="algo1">
+                    <option value="hybrid" selected>Hybrid A* (Smart)</option>
+                    <option value="rl">Deep Q-Learning</option>
+                    <option value="astar">Basic A* (Risky)</option>
+                    <option value="hamilton">Hamiltonian (Slow)</option>
+                </select>
+            </div>
             <canvas id="canvas1" width="640" height="480"></canvas>
-            <div class="stats"><div>Score: <span id="score1" class="score-val" style="color: var(--accent-1)">0</span></div><div>Status: <span id="status1">Ready</span></div></div>
+            <div class="stats">
+                <div>SCORE: <span id="score1" class="score-val" style="color: var(--accent-1)">0</span></div>
+                <div id="status1">Ready</div>
+            </div>
         </div>
-        <!-- PLAYER 2 -->
+
         <div class="game-card p2">
-            <label>PLAYER 2 (Pink)</label>
-            <select id="algo2"> <option value="rl" selected>Deep Q-Learning</option> <option value="hybrid">Hybrid A* (Smart)</option> <option value="astar">Basic A* (Risky)</option> <option value="hamilton">Hamiltonian (Slow)</option> </select>
+            <div class="player-header">
+                <span style="color: var(--accent-2)">PLAYER 2 (Pink)</span>
+                <select id="algo2">
+                    <option value="rl" selected>Deep Q-Learning</option>
+                    <option value="hybrid">Hybrid A* (Smart)</option>
+                    <option value="astar">Basic A* (Risky)</option>
+                    <option value="hamilton">Hamiltonian (Slow)</option>
+                </select>
+            </div>
             <canvas id="canvas2" width="640" height="480"></canvas>
-            <div class="stats"><div>Score: <span id="score2" class="score-val" style="color: var(--accent-2)">0</span></div><div>Status: <span id="status2">Ready</span></div></div>
+            <div class="stats">
+                <div>SCORE: <span id="score2" class="score-val" style="color: var(--accent-2)">0</span></div>
+                <div id="status2">Ready</div>
+            </div>
         </div>
     </div>
-    <div class="winner-banner" id="winnnerMsg"></div>
-    <div class="main-controls">
-        <button class="btn-main btn-start" onclick="startDualGame()">START COMPARISON</button>
-        <button class="btn-main btn-stop" onclick="stopDualGame()">STOP</button>
+
+    <div id="winnerMsg"></div>
+
+    <div class="controls">
+        <button class="btn-start" onclick="startBattle()">Start Battle</button>
+        <button class="btn-stop" onclick="stopBattle()">Stop</button>
     </div>
 
     <script>
-        const CELL_SIZE = 20; 
-        
-        // --- LOAD ẢNH ---
-        // Thêm timestamp để xóa cache trình duyệt
+        const CELL_SIZE = 20;
         const ts = new Date().getTime();
-        const appleImg = new Image(); appleImg.src = '/pictures/apple_pixel.png?v=' + ts;
-        const headImg = new Image();  headImg.src = '/pictures/head_white.png?v=' + ts; // Đầu trắng
-        const tailImg = new Image();  tailImg.src = '/pictures/tail.png?v=' + ts;       // Đuôi
 
-        class SnakeInstance {
-            constructor(canvasId, scoreId, statusId, color) {
+        // Load Assets
+        const appleImg = new Image(); appleImg.src = '/pictures/apple_pixel.png?v=' + ts;
+        const headImg = new Image();  headImg.src = '/pictures/head_white.png?v=' + ts;
+        const tailImg = new Image();  tailImg.src = '/pictures/tail.png?v=' + ts;
+
+        class SnakeAI {
+            constructor(canvasId, scoreId, statusId, bodyColor) {
                 this.canvas = document.getElementById(canvasId);
                 this.ctx = this.canvas.getContext('2d');
                 this.scoreEl = document.getElementById(scoreId);
                 this.statusEl = document.getElementById(statusId);
-                this.color = color;
-                this.GRID_W = this.canvas.width / CELL_SIZE;
-                this.GRID_H = this.canvas.height / CELL_SIZE;
-                this.snake = []; this.food = {}; this.active = false; this.score = 0;
+                this.bodyColor = bodyColor;
+                this.cols = this.canvas.width / CELL_SIZE;
+                this.rows = this.canvas.height / CELL_SIZE;
+                this.reset();
             }
-            init() {
-                this.snake = [{x: 15, y: 12}, {x: 14, y: 12}, {x: 13, y: 12}];
+
+            reset() {
+                this.snake = [{x: 10, y: 10}, {x: 9, y: 10}, {x: 8, y: 10}];
                 this.spawnFood();
-                this.score = 0; this.active = true;
-                this.scoreEl.innerText = "0"; this.statusEl.innerText = "Running...";
+                this.score = 0;
+                this.active = true;
+                this.isWaiting = false;
+                this.scoreEl.innerText = "0";
+                this.statusEl.innerText = "Running";
+                this.statusEl.style.color = "#ccc";
                 this.draw();
             }
+
             spawnFood() {
                 while (true) {
-                    this.food = { x: Math.floor(Math.random() * this.GRID_W), y: Math.floor(Math.random() * this.GRID_H) };
+                    this.food = {
+                        x: Math.floor(Math.random() * this.cols),
+                        y: Math.floor(Math.random() * this.rows)
+                    };
                     if (!this.snake.some(s => s.x === this.food.x && s.y === this.food.y)) break;
                 }
             }
 
-            // --- HÀM XOAY VÀ VẼ ẢNH ---
             drawRotated(img, x, y, angle) {
                 this.ctx.save();
                 this.ctx.translate(x * CELL_SIZE + CELL_SIZE/2, y * CELL_SIZE + CELL_SIZE/2);
@@ -95,85 +162,167 @@
             }
 
             draw() {
-                // Xóa màn hình
+                // Clear background
                 this.ctx.fillStyle = '#000';
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-                
+
                 if (!this.active) {
-                    this.ctx.fillStyle = '#333'; this.ctx.font = '30px monospace'; 
-                    this.ctx.fillText("GAME OVER", 240, 240); return;
+                    this.ctx.fillStyle = '#444';
+                    this.ctx.font = 'bold 30px monospace';
+                    this.ctx.textAlign = "center";
+                    this.ctx.fillText("GAME OVER", this.canvas.width/2, this.canvas.height/2);
+                    return;
                 }
-                
-                // 1. Vẽ Táo
+
+                // Draw Apple
                 this.ctx.drawImage(appleImg, this.food.x * CELL_SIZE, this.food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
 
-                // 2. Vẽ Rắn (Logic mới: Đầu ảnh - Thân màu - Đuôi ảnh)
-                for (let i = 0; i < this.snake.length; i++) {
-                    let segment = this.snake[i];
-                    let isHead = (i === 0);
-                    let isTail = (i === this.snake.length - 1);
+                // Draw Snake
+                this.snake.forEach((segment, i) => {
+                    const isHead = (i === 0);
+                    const isTail = (i === this.snake.length - 1);
 
                     if (isHead) {
-                        // --- VẼ ĐẦU ---
-                        let next = this.snake[i + 1] || segment; 
+                        const next = this.snake[i + 1] || segment;
                         let angle = 0;
-                        if (segment.x > next.x) angle = 0;           // Phải
-                        else if (segment.x < next.x) angle = Math.PI; // Trái
-                        else if (segment.y < next.y) angle = -Math.PI/2; // Lên
-                        else if (segment.y > next.y) angle = Math.PI/2;  // Xuống
-                        
+                        if (segment.x > next.x) angle = 0;
+                        else if (segment.x < next.x) angle = Math.PI;
+                        else if (segment.y < next.y) angle = -Math.PI/2;
+                        else if (segment.y > next.y) angle = Math.PI/2;
                         this.drawRotated(headImg, segment.x, segment.y, angle);
                     } 
                     else if (isTail) {
-                        // --- VẼ ĐUÔI ---
-                        let prev = this.snake[i - 1] || segment;
+                        const prev = this.snake[i - 1] || segment;
                         let angle = 0;
-                        if (prev.x > segment.x) angle = 0; 
+                        if (prev.x > segment.x) angle = 0;
                         else if (prev.x < segment.x) angle = Math.PI;
                         else if (prev.y < segment.y) angle = -Math.PI/2;
                         else if (prev.y > segment.y) angle = Math.PI/2;
-
                         this.drawRotated(tailImg, segment.x, segment.y, angle);
                     } 
                     else {
-                        // --- VẼ THÂN (Hình vuông màu) ---
-                        this.ctx.fillStyle = this.color;
+                        this.ctx.fillStyle = this.bodyColor;
                         this.ctx.fillRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-                        this.ctx.strokeStyle = '#121212';
+                        this.ctx.strokeStyle = '#000';
                         this.ctx.strokeRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                     }
+                });
+            }
+
+            async step(algorithm) {
+                if (!this.active || this.isWaiting) return;
+                this.isWaiting = true;
+
+                try {
+                    const res = await fetch('http://127.0.0.1:8001/predict', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            snake: this.snake.map(s => [s.x, s.y]),
+                            food: [this.food.x, this.food.y],
+                            board_size: {width: this.cols, height: this.rows},
+                            algorithm: algorithm
+                        })
+                    });
+                    
+                    const data = await res.json();
+                    const move = data.move;
+
+                    if (move[0] === 0 && move[1] === 0) { this.die("Stuck"); return; }
+
+                    const newHead = {x: this.snake[0].x + move[0], y: this.snake[0].y + move[1]};
+
+                    // Collision Check
+                    if (newHead.x < 0 || newHead.x >= this.cols || newHead.y < 0 || newHead.y >= this.rows) {
+                        this.die("Wall"); return;
+                    }
+                    if (this.snake.some(s => s.x === newHead.x && s.y === newHead.y)) {
+                        this.die("Body"); return;
+                    }
+
+                    this.snake.unshift(newHead);
+                    if (newHead.x === this.food.x && newHead.y === this.food.y) {
+                        this.score++;
+                        this.scoreEl.innerText = this.score;
+                        this.spawnFood();
+                    } else {
+                        this.snake.pop();
+                    }
+                    this.draw();
+
+                } catch (e) {
+                    console.error("API Error:", e);
+                    this.die("API Offline");
+                } finally {
+                    this.isWaiting = false;
                 }
             }
-            async update(algo) {
-                if (!this.active) return;
-                try {
-                    const response = await fetch('http://127.0.0.1:8001/predict', { 
-                        method: 'POST', headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ snake: this.snake.map(s => [s.x, s.y]), food: [this.food.x, this.food.y], board_size: {width: this.GRID_W, height: this.GRID_H}, algorithm: algo })
-                    });
-                    const data = await response.json();
-                    const move = data.move; 
-                    if (move[0] === 0 && move[1] === 0) { this.die("Stuck"); return; }
-                    const newHead = {x: this.snake[0].x + move[0], y: this.snake[0].y + move[1]};
-                    if(newHead.x < 0 || newHead.x >= this.GRID_W || newHead.y < 0 || newHead.y >= this.GRID_H || this.snake.some(s => s.x === newHead.x && s.y === newHead.y)) { this.die("Crash"); return; }
-                    this.snake.unshift(newHead);
-                    if (newHead.x === this.food.x && newHead.y === this.food.y) { this.score++; this.scoreEl.innerText = this.score; this.spawnFood(); }
-                    else { this.snake.pop(); }
-                    this.draw();
-                } catch (e) { console.error(e); this.active = false; }
+
+            die(reason) {
+                this.active = false;
+                this.statusEl.innerText = `Dead (${reason})`;
+                this.statusEl.style.color = '#f44336';
+                this.draw();
             }
-            die(reason) { this.active = false; this.statusEl.innerText = `Dead (${reason})`; this.statusEl.style.color = '#f44336'; this.draw(); }
         }
-        const game1 = new SnakeInstance('canvas1', 'score1', 'status1', '#00E5FF');
-        const game2 = new SnakeInstance('canvas2', 'score2', 'status2', '#FF4081');
-        let intervalId = null;
-        function startDualGame() { stopDualGame(); game1.init(); game2.init(); document.getElementById('winnnerMsg').innerText = ""; 
-            intervalId = setInterval(async () => { Promise.all([game1.update(document.getElementById('algo1').value), game2.update(document.getElementById('algo2').value)]).then(() => { checkWinner(); }); }, 60); }
-        function stopDualGame() { if (intervalId) clearInterval(intervalId); game1.active = false; game2.active = false; }
-        function checkWinner() { if (!game1.active && !game2.active) { stopDualGame(); let msg = game1.score > game2.score ? "🏆 PLAYER 1 WINS!" : (game2.score > game1.score ? "🏆 PLAYER 2 WINS!" : "🤝 DRAW!"); document.getElementById('winnnerMsg').innerText = msg; } }
-        
-        let loaded = 0; const check = () => { loaded++; if(loaded===3) { if(game1.active) game1.draw(); if(game2.active) game2.draw(); } };
-        appleImg.onload = check; headImg.onload = check; tailImg.onload = check;
+
+        // --- MAIN CONTROL ---
+        const p1 = new SnakeAI('canvas1', 'score1', 'status1', '#00E5FF');
+        const p2 = new SnakeAI('canvas2', 'score2', 'status2', '#FF4081');
+        let isRunning = false;
+
+        async function startBattle() {
+            if (isRunning) return;
+            isRunning = true;
+            document.getElementById('winnerMsg').innerText = "";
+            
+            p1.reset();
+            p2.reset();
+
+            const algo1 = document.getElementById('algo1').value;
+            const algo2 = document.getElementById('algo2').value;
+
+            async function loop() {
+                if (!isRunning) return;
+
+                // Cả 2 AI cùng tính toán song song
+                await Promise.all([
+                    p1.step(algo1),
+                    p2.step(algo2)
+                ]);
+
+                checkWinner();
+                
+                if (p1.active || p2.active) {
+                    setTimeout(loop, 40); // Tốc độ frame
+                } else {
+                    isRunning = false;
+                }
+            }
+            loop();
+        }
+
+        function stopBattle() {
+            isRunning = false;
+            p1.active = false;
+            p2.active = false;
+        }
+
+        function checkWinner() {
+            if (!p1.active && !p2.active) {
+                let msg = "";
+                if (p1.score > p2.score) msg = "🏆 PLAYER 1 WINS!";
+                else if (p2.score > p1.score) msg = "🏆 PLAYER 2 WINS!";
+                else msg = "🤝 DRAW!";
+                document.getElementById('winnerMsg').innerText = msg;
+            }
+        }
+
+        // Pre-draw when images loaded
+        window.onload = () => { 
+            p1.draw(); 
+            p2.draw(); 
+        };
     </script>
 </body>
 </html>
