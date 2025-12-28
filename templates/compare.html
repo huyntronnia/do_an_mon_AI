@@ -2,34 +2,32 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Snake AI - Dual Comparison</title>
+    <title>Snake AI - Dual Comparison (640x480)</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         /* 1. KHAI BÁO FONT AKIRA */
         @font-face {
             font-family: 'Akira';
-            src: url("/pictures/akiraexpanded.otf") format('opentype');
+            src: url("/static/akiraexpanded.otf") format('opentype');
         }
 
         :root {
             --bg-color: #121212;
-            --card-bg: rgba(30, 30, 30, 0.85); /* Nền mờ cho khung game */
+            --card-bg: rgba(30, 30, 30, 0.85);
             --text-color: #e0e0e0;
             --accent-1: #00E5FF;
             --accent-2: #FF4081;
         }
 
         body {
-            /* Cấu hình ảnh nền */
             background-color: var(--bg-color);
-            background-image: url("/pictures/bg_snake.png");
+            background-image: url("/static/bg_snake.png");
             background-repeat: no-repeat;
             background-position: center;
             background-size: cover;
             background-attachment: fixed;
-
             color: var(--text-color);
-            font-family: 'Roboto Mono', monospace; /* Font mặc định cho nội dung */
+            font-family: 'Roboto Mono', monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -38,7 +36,6 @@
             min-height: 100vh;
         }
 
-        /* TIÊU ĐỀ: Dùng font Akira nhưng bỏ hiệu ứng màu mè */
         h1 { 
             font-family: 'Akira', sans-serif !important; 
             color: #fff; 
@@ -46,8 +43,6 @@
             margin-bottom: 10px; 
             text-transform: uppercase;
             text-align: center;
-            
-            /* Chỉ để bóng mờ nhẹ màu đen cho dễ đọc trên ảnh nền, không làm bóng dày */
             text-shadow: 0 4px 10px rgba(0,0,0,0.8); 
             letter-spacing: 2px;
         }
@@ -78,8 +73,12 @@
             flex-direction: column;
             align-items: center;
             border-top: 4px solid #555;
-            width: 400px;
-            backdrop-filter: blur(4px); /* Làm mờ nền phía sau card một chút cho đẹp */
+            
+            /* --- SỬA ĐỔI: Để width tự động theo Canvas --- */
+            width: auto; 
+            max-width: 95vw; /* Đảm bảo không tràn màn hình */
+            
+            backdrop-filter: blur(4px);
         }
 
         .game-card.p1 { border-color: var(--accent-1); }
@@ -101,6 +100,9 @@
             background-color: #000;
             border: 2px solid #333;
             margin-bottom: 10px;
+            /* Đảm bảo canvas responsive nếu màn hình quá nhỏ */
+            max-width: 100%; 
+            height: auto;
         }
 
         .stats {
@@ -119,11 +121,9 @@
         }
 
         button.btn-main {
-            /* Nút bấm dùng font Akira cho đồng bộ nhưng đơn giản */
             font-family: 'Akira', sans-serif !important;
             padding: 15px 40px;
-            font-size: 0.9rem; /* Chữ Akira to ngang nên giảm size chút */
-            
+            font-size: 0.9rem;
             cursor: pointer;
             border: none;
             border-radius: 8px;
@@ -166,7 +166,8 @@
                 <option value="astar">Basic A* (Risky)</option>
                 <option value="hamilton">Hamiltonian (Slow)</option>
             </select>
-            <canvas id="canvas1" width="360" height="360"></canvas>
+            <!-- SỬA ĐỔI: Kích thước 640x480 -->
+            <canvas id="canvas1" width="640" height="480"></canvas>
             <div class="stats">
                 <div>Score: <span id="score1" class="score-val" style="color: var(--accent-1)">0</span></div>
                 <div>Status: <span id="status1">Ready</span></div>
@@ -182,7 +183,8 @@
                 <option value="astar">Basic A* (Risky)</option>
                 <option value="hamilton">Hamiltonian (Slow)</option>
             </select>
-            <canvas id="canvas2" width="360" height="360"></canvas>
+            <!-- SỬA ĐỔI: Kích thước 640x480 -->
+            <canvas id="canvas2" width="640" height="480"></canvas>
             <div class="stats">
                 <div>Score: <span id="score2" class="score-val" style="color: var(--accent-2)">0</span></div>
                 <div>Status: <span id="status2">Ready</span></div>
@@ -214,7 +216,8 @@
                 this.score = 0;
             }
             init() {
-                this.snake = [{x: 5, y: 10}, {x: 4, y: 10}, {x: 3, y: 10}];
+                // SỬA ĐỔI: Vị trí xuất phát ở giữa map lớn (Khoảng x=15, y=12)
+                this.snake = [{x: 15, y: 12}, {x: 14, y: 12}, {x: 13, y: 12}];
                 this.spawnFood();
                 this.score = 0;
                 this.active = true;
@@ -237,8 +240,8 @@
                 this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
                 if (!this.active) {
                     this.ctx.fillStyle = '#333';
-                    this.ctx.font = '20px monospace';
-                    this.ctx.fillText("GAME OVER", 130, 180);
+                    this.ctx.font = '30px monospace'; // Tăng size chữ Game Over cho map to
+                    this.ctx.fillText("GAME OVER", 240, 240);
                     return;
                 }
                 this.ctx.fillStyle = '#FF5252';
