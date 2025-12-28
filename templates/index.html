@@ -5,226 +5,44 @@
     <title>Snake AI Visualization</title>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* 1. KHAI BÁO FONT AKIRA */
-        @font-face {
-            font-family: 'Akira';
-            src: url("/pictures/akiraexpanded.otf") format('opentype');
-        }
-
-        :root {
-            --bg-color: #121212;
-            --card-bg: rgba(30, 30, 30, 0.85); /* Nền mờ */
-            --text-color: #e0e0e0;
-            --accent-color: #4CAF50;
-            
-            /* Màu cho từng nút */
-            --btn-astar: #2196F3;
-            --btn-hybrid: #00BCD4;
-            --btn-hamilton: #9C27B0;
-            --btn-rl: #FF9800;
-        }
-
+        @font-face { font-family: 'Akira'; src: url("/pictures/akiraexpanded.otf") format('opentype'); }
+        :root { --bg-color: #121212; --card-bg: rgba(30, 30, 30, 0.85); --text-color: #e0e0e0; --accent-color: #4CAF50; }
         body {
             background-color: var(--bg-color);
-            
-            /* --- GIỮ NGUYÊN BACKGROUND IMAGE CŨ --- */
             background-image: url("/pictures/bg_snake2.png");
-            
-            background-repeat: no-repeat;
-            background-position: center;
-            background-size: cover;
-            background-attachment: fixed;
-
-            color: var(--text-color);
-            font-family: 'Roboto Mono', monospace;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
+            background-repeat: no-repeat; background-position: center; background-size: cover; background-attachment: fixed;
+            color: var(--text-color); font-family: 'Roboto Mono', monospace;
+            display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; min-height: 100vh;
         }
-
-        /* Tiêu đề dùng font Akira */
-        h1 { 
-            font-family: 'Akira', sans-serif !important; 
-            margin-bottom: 5px; 
-            color: #fff; 
-            text-shadow: 0 4px 10px rgba(0,0,0,0.8);
-            font-size: 2.5rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            text-align: center;
-        }
-
-        .nav-link { 
-            color: #ddd; 
-            text-decoration: none; 
-            margin-bottom: 25px; 
-            font-size: 0.9rem; 
-            text-shadow: 1px 1px 2px #000;
-            padding: 5px 10px;
-            background: rgba(0,0,0,0.5);
-            border-radius: 4px;
-        }
-        .nav-link:hover { color: #fff; background: rgba(255,255,255,0.2); }
-
-        .container {
-            display: flex;
-            gap: 40px;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: flex-start;
-            width: 100%;
-            /* Tăng max-width để chứa vừa canvas to */
-            max-width: 1400px;
-        }
-
-        /* --- STYLE CHUNG CHO CÁC KHUNG (CARD) --- */
-        .glass-card {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-            backdrop-filter: blur(5px);
-            border-top: 4px solid #555;
-        }
-
-        /* KHU VỰC GAME */
-        .game-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        canvas {
-            background-color: #000;
-            border: 2px solid #444;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
-            border-radius: 4px;
-            /* Responsive */
-            max-width: 100%;
-            height: auto;
-        }
-
-        .stats {
-            margin-top: 15px;
-            font-size: 1rem;
-            color: #ccc;
-            width: 100%;
-            text-align: center;
-            padding-bottom: 10px;
-            border-bottom: 1px solid #444;
-            margin-bottom: 15px;
-        }
-        .highlight-score { color: #fff; font-weight: bold; font-size: 1.2rem; }
-
-        .controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            width: 100%;
-        }
-
-        button {
-            padding: 15px;
-            font-family: 'Akira', sans-serif !important; /* Nút dùng font Akira */
-            font-size: 0.75rem; /* Font này to nên giảm size */
-            font-weight: normal;
-            cursor: pointer;
-            border: none;
-            border-radius: 6px;
-            transition: 0.2s;
-            color: white;
-            text-transform: uppercase;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            letter-spacing: 1px;
-        }
-
-        .btn-astar { background-color: var(--btn-astar); }
-        .btn-hybrid { background-color: var(--btn-hybrid); color: #000; }
-        .btn-hamilton { background-color: var(--btn-hamilton); }
-        .btn-rl { background-color: var(--btn-rl); }
-        
-        .btn-stop { 
-            background-color: #f44336; 
-            grid-column: span 2; 
-            margin-top: 5px; 
-            font-size: 0.9rem;
-        }
-        
-        button:hover { transform: translateY(-2px); filter: brightness(1.1); }
-        button:active { transform: translateY(0); }
-        
-        button.active { 
-            box-shadow: 0 0 15px currentColor; 
-            border: 2px solid white; 
-            transform: scale(1.02);
-        }
-
-        /* BẢNG SO SÁNH */
-        .comparison-area {
-            flex: 1;
-            min-width: 300px;
-            max-width: 600px;
-        }
-
-        .comparison-area h3 { 
-            margin-top: 0; 
-            color: #fff; 
-            border-bottom: 2px solid #555; 
-            padding-bottom: 15px;
-            font-family: 'Akira', sans-serif !important;
-            font-size: 1rem;
-            text-align: center;
-            letter-spacing: 1px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        th, td {
-            padding: 12px 10px;
-            text-align: left;
-            border-bottom: 1px solid #444;
-            font-size: 0.85rem;
-        }
-
-        th { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
-        
-        /* Màu tiêu đề cột */
-        th.col-astar { color: var(--btn-astar); }
-        th.col-hybrid { color: var(--btn-hybrid); }
-        th.col-hamilton { color: var(--btn-hamilton); }
-        th.col-rl { color: var(--btn-rl); }
-
-        tr:last-child td { border-bottom: none; }
-        tr:hover { background-color: rgba(255,255,255,0.05); }
-
-        .bad { color: #ff5252; }
-        .good { color: #69f0ae; }
-        .best { color: #FFD700; font-weight: bold; }
+        h1 { font-family: 'Akira', sans-serif !important; margin-bottom: 5px; color: #fff; text-shadow: 0 4px 10px rgba(0,0,0,0.8); font-size: 2.5rem; text-align: center; }
+        .nav-link { color: #ddd; text-decoration: none; margin-bottom: 25px; font-size: 0.9rem; padding: 5px 10px; background: rgba(0,0,0,0.5); border-radius: 4px; }
+        .container { display: flex; gap: 40px; flex-wrap: wrap; justify-content: center; width: 100%; max-width: 1400px; }
+        .glass-card { background: var(--card-bg); padding: 25px; border-radius: 12px; backdrop-filter: blur(5px); border-top: 4px solid #555; }
+        .game-area { display: flex; flex-direction: column; align-items: center; }
+        canvas { background-color: #000; border: 2px solid #444; border-radius: 4px; max-width: 100%; height: auto; }
+        .stats { margin-top: 15px; font-size: 1rem; color: #ccc; text-align: center; }
+        .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; margin-top: 15px; }
+        button { padding: 15px; font-family: 'Akira', sans-serif !important; font-size: 0.75rem; cursor: pointer; border: none; border-radius: 6px; color: white; text-transform: uppercase; }
+        .btn-astar { background-color: #2196F3; } .btn-hybrid { background-color: #00BCD4; color: black; } 
+        .btn-hamilton { background-color: #9C27B0; } .btn-rl { background-color: #FF9800; }
+        .btn-stop { background-color: #f44336; grid-column: span 2; }
+        button.active { border: 2px solid white; transform: scale(1.05); }
+        .comparison-area { flex: 1; min-width: 300px; max-width: 600px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; color: #ccc; }
+        th, td { padding: 12px; border-bottom: 1px solid #444; }
     </style>
 </head>
 <body>
-
     <h1>Snake AI Visualization</h1>
     <a href="/compare" class="nav-link">→ Go to Dual Comparison Mode</a>
 
     <div class="container">
-        
-        <!-- LEFT: GAME AREA (Đã cập nhật 640x480) -->
         <div class="game-area glass-card">
             <canvas id="gameCanvas" width="640" height="480"></canvas>
-            
             <div class="stats">
-                <div>SCORE: <span id="score" class="highlight-score" style="color: var(--accent-color)">0</span></div>
-                <div style="margin-top:5px; font-size: 0.8rem;">Algorithm: <span id="algo-name" style="color: #fff;">Ready</span></div>
+                <div>SCORE: <span id="score" style="color: #4CAF50; font-weight: bold;">0</span></div>
+                <div style="margin-top:5px;">Algorithm: <span id="algo-name">Ready</span></div>
             </div>
-
             <div class="controls">
                 <button class="btn-astar" onclick="startGame('astar')">Basic A*</button>
                 <button class="btn-hybrid" onclick="startGame('hybrid')">Hybrid A*</button>
@@ -234,55 +52,14 @@
             </div>
         </div>
 
-        <!-- RIGHT: COMPARISON TABLE -->
         <div class="comparison-area glass-card">
-            <h3>Algorithm Performance</h3>
+            <h3 style="text-align:center; color:white; font-family:'Akira', sans-serif !important;">Performance</h3>
             <table>
-                <thead>
-                    <tr>
-                        <th>Criteria</th>
-                        <th class="col-astar">A*</th>
-                        <th class="col-hybrid">Hybrid</th>
-                        <th class="col-hamilton">Hamilton</th>
-                        <th class="col-rl">DQL</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Criteria</th><th>A*</th><th>Hybrid</th><th>Hamilton</th><th>DQL</th></tr></thead>
                 <tbody>
-                    <tr>
-                        <td><strong>Max Score</strong></td>
-                        <td class="bad">Low</td>
-                        <td class="good">High</td>
-                        <td class="best">Max</td>
-                        <td>High</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Survival</strong></td>
-                        <td class="bad">Low</td>
-                        <td class="good">High</td>
-                        <td class="best">100%</td>
-                        <td>Varies</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Efficiency</strong></td>
-                        <td class="best">Optimal</td>
-                        <td class="good">Good</td>
-                        <td class="bad">Slow</td>
-                        <td>Avg</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Speed</strong></td>
-                        <td class="best">Fast</td>
-                        <td>Fast</td>
-                        <td class="best">Fast</td>
-                        <td class="bad">Slow</td>
-                    </tr>
-                    <tr>
-                        <td><strong>Logic</strong></td>
-                        <td>Shortest Path</td>
-                        <td>A* + Safety</td>
-                        <td>Cycle</td>
-                        <td>AI / ML</td>
-                    </tr>
+                    <tr><td>Max Score</td><td>Low</td><td>High</td><td>Max</td><td>High</td></tr>
+                    <tr><td>Survival</td><td>Low</td><td>High</td><td>100%</td><td>Varies</td></tr>
+                    <tr><td>Speed</td><td>Fast</td><td>Fast</td><td>Fast</td><td>Slow</td></tr>
                 </tbody>
             </table>
         </div>
@@ -293,160 +70,162 @@
         const ctx = canvas.getContext('2d');
         const scoreEl = document.getElementById('score');
         const algoNameEl = document.getElementById('algo-name');
-
         const CELL_SIZE = 20;
         const GRID_W = canvas.width / CELL_SIZE;
         const GRID_H = canvas.height / CELL_SIZE;
 
-        // --- 1. LOAD ẢNH QUẢ TÁO ---
-        const appleImg = new Image();
-        appleImg.src = '/pictures/apple_pixel.png'; // Đường dẫn ảnh táo
+        const ts = new Date().getTime();
+        const appleImg = new Image(); appleImg.src = '/pictures/apple_pixel.png?v=' + ts;
+        const headImg = new Image();  headImg.src = '/pictures/head_green.png?v=' + ts;
+        const tailImg = new Image();  tailImg.src = '/pictures/tail.png?v=' + ts;
 
-        let snake = [];
-        let food = {};
-        let currentAlgo = '';
-        let gameInterval = null;
-        let isProcessing = false;
+        let snake = [], food = {}, currentAlgo = '', gameInterval = null, isProcessing = false;
+        
+        // --- PARTICLE SYSTEM ---
+        let particles = [];
+
+        function spawnParticles(x, y) {
+            for (let i = 0; i < 12; i++) {
+                particles.push({
+                    x: x * CELL_SIZE + CELL_SIZE / 2,
+                    y: y * CELL_SIZE + CELL_SIZE / 2,
+                    vx: (Math.random() - 0.5) * 10,
+                    vy: (Math.random() - 0.5) * 10,
+                    life: 1.0,
+                    color: Math.random() > 0.5 ? '#FF5252' : '#FFCDD2',
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+
+        function drawParticles() {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.05; 
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                } else {
+                    ctx.globalAlpha = p.life;
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x, p.y, p.size, p.size);
+                    ctx.globalAlpha = 1.0;
+                }
+            }
+        }
+        // -----------------------
 
         function initGame() {
-            // Cập nhật vị trí xuất phát cho map to
             snake = [{x: 15, y: 12}, {x: 14, y: 12}, {x: 13, y: 12}];
             spawnFood();
+            particles = [];
             draw();
         }
 
         function spawnFood() {
             while (true) {
-                food = {
-                    x: Math.floor(Math.random() * GRID_W),
-                    y: Math.floor(Math.random() * GRID_H)
-                };
-                let onSnake = false;
-                for (let segment of snake) {
-                    if (segment.x === food.x && segment.y === food.y) {
-                        onSnake = true;
-                        break;
-                    }
-                }
-                if (!onSnake) break;
+                food = { x: Math.floor(Math.random() * GRID_W), y: Math.floor(Math.random() * GRID_H) };
+                if (!snake.some(s => s.x === food.x && s.y === food.y)) break;
             }
+        }
+
+        function drawRotated(img, x, y, angle) {
+            ctx.save();
+            ctx.translate(x * CELL_SIZE + CELL_SIZE/2, y * CELL_SIZE + CELL_SIZE/2);
+            ctx.rotate(angle);
+            ctx.drawImage(img, -CELL_SIZE/2, -CELL_SIZE/2, CELL_SIZE, CELL_SIZE);
+            ctx.restore();
         }
 
         function draw() {
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // --- 2. VẼ TÁO THAY CHO HÌNH VUÔNG ĐỎ ---
+            // Vẽ Táo
             ctx.drawImage(appleImg, food.x * CELL_SIZE, food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
 
-            snake.forEach((segment, index) => {
-                if (index === 0) {
-                    ctx.fillStyle = '#4CAF50'; 
-                } else {
-                    ctx.fillStyle = '#81C784'; 
+            // Vẽ Rắn
+            for (let i = 0; i < snake.length; i++) {
+                let s = snake[i];
+                
+                if (i === 0) { // ĐẦU
+                    let next = snake[1] || s;
+                    let angle = 0;
+                    if (s.x > next.x) angle = 0;
+                    else if (s.x < next.x) angle = Math.PI;
+                    else if (s.y < next.y) angle = -Math.PI/2;
+                    else if (s.y > next.y) angle = Math.PI/2;
+                    drawRotated(headImg, s.x, s.y, angle);
+                } 
+                else if (i === snake.length - 1) { // ĐUÔI
+                    let prev = snake[i-1] || s;
+                    let angle = 0;
+                    if (prev.x > s.x) angle = 0;
+                    else if (prev.x < s.x) angle = Math.PI;
+                    else if (prev.y < s.y) angle = -Math.PI/2;
+                    else if (prev.y > s.y) angle = Math.PI/2;
+                    drawRotated(tailImg, s.x, s.y, angle);
+                } 
+                else { // THÂN
+                    ctx.fillStyle = '#4CAF50';
+                    ctx.fillRect(s.x * CELL_SIZE, s.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                 }
-                ctx.fillRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-                ctx.strokeStyle = '#121212';
-                ctx.strokeRect(segment.x * CELL_SIZE, segment.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-            });
+            }
+
+            // Vẽ Hiệu ứng Táo vỡ
+            drawParticles();
         }
 
         async function gameStep() {
-            if (isProcessing) return;
-            isProcessing = true;
-
-            const payload = {
-                snake: snake.map(s => [s.x, s.y]),
-                food: [food.x, food.y],
-                board_size: {width: GRID_W, height: GRID_H},
-                algorithm: currentAlgo
-            };
-
+            if (isProcessing) return; isProcessing = true;
             try {
                 const response = await fetch('http://127.0.0.1:8001/predict', { 
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
+                    method: 'POST', headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ snake: snake.map(s => [s.x, s.y]), food: [food.x, food.y], board_size: {width: GRID_W, height: GRID_H}, algorithm: currentAlgo })
                 });
-                
                 const data = await response.json();
                 const move = data.move; 
-
-                if (move[0] === 0 && move[1] === 0) {
-                    stopGame();
-                    alert(`Game Over! Score: ${scoreEl.innerText} (Stuck)`);
-                    return;
-                }
-
-                const head = snake[0];
-                const newHead = {x: head.x + move[0], y: head.y + move[1]};
-
-                if(newHead.x < 0 || newHead.x >= GRID_W || newHead.y < 0 || newHead.y >= GRID_H) {
-                    stopGame();
-                    alert(`Game Over! Score: ${scoreEl.innerText} (Hit Wall)`);
-                    return;
-                }
                 
-                for (let s of snake) {
-                     if (newHead.x === s.x && newHead.y === s.y) {
-                        stopGame();
-                        alert(`Game Over! Score: ${scoreEl.innerText} (Hit Body)`);
-                        return;
-                     }
+                if (move[0] === 0 && move[1] === 0) { stopGame(); alert("Game Over (Stuck)"); return; }
+                const newHead = {x: snake[0].x + move[0], y: snake[0].y + move[1]};
+                
+                if(newHead.x < 0 || newHead.x >= GRID_W || newHead.y < 0 || newHead.y >= GRID_H || snake.some(s => s.x === newHead.x && s.y === newHead.y)) {
+                    stopGame(); alert(`Game Over! Score: ${scoreEl.innerText}`); return;
                 }
 
                 snake.unshift(newHead);
-
-                if (newHead.x === food.x && newHead.y === food.y) {
-                    scoreEl.innerText = parseInt(scoreEl.innerText) + 1;
-                    spawnFood();
-                } else {
-                    snake.pop();
+                if (newHead.x === food.x && newHead.y === food.y) { 
+                    scoreEl.innerText = parseInt(scoreEl.innerText) + 1; 
+                    spawnParticles(food.x, food.y); // BÙM! TẠO HẠT
+                    spawnFood(); 
                 }
-
+                else { snake.pop(); }
                 draw();
-
-            } catch (error) {
-                console.error("Error:", error);
-                stopGame();
-            }
-            
+            } catch (error) { console.error(error); stopGame(); }
             isProcessing = false;
         }
 
         function startGame(algo) {
-            stopGame();
-            currentAlgo = algo;
-            
+            stopGame(); currentAlgo = algo;
             document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
             document.querySelector(`.btn-${algo}`).classList.add('active');
-            
-            let nameDisplay = "";
-            let speed = 60; 
-
-            if(algo === 'astar') { nameDisplay = "Basic A*"; speed = 80; }
-            if(algo === 'hybrid') { nameDisplay = "Hybrid A*"; speed = 50; } 
-            if(algo === 'hamilton') { nameDisplay = "Hamiltonian Cycle"; speed = 20; } 
-            if(algo === 'rl') { nameDisplay = "Deep Q-Learning"; speed = 60; }
-            
-            algoNameEl.innerText = nameDisplay;
-            initGame();
-            scoreEl.innerText = 0;
-
-            gameInterval = setInterval(gameStep, speed);
+            let txt = "", spd = 60;
+            if(algo === 'astar') { txt = "Basic A*"; spd = 80; }
+            if(algo === 'hybrid') { txt = "Hybrid A*"; spd = 50; } 
+            if(algo === 'hamilton') { txt = "Hamiltonian Cycle"; spd = 20; } 
+            if(algo === 'rl') { txt = "Deep Q-Learning"; spd = 60; }
+            algoNameEl.innerText = txt;
+            initGame(); scoreEl.innerText = 0;
+            gameInterval = setInterval(gameStep, spd);
         }
 
-        function stopGame() {
-            clearInterval(gameInterval);
-            isProcessing = false;
-            algoNameEl.innerText = "Stopped";
-            document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
-        }
-
-        // Đảm bảo vẽ lần đầu khi ảnh load xong
-        appleImg.onload = function() {
-            initGame();
-        };
+        function stopGame() { clearInterval(gameInterval); isProcessing = false; algoNameEl.innerText = "Stopped"; document.querySelectorAll('button').forEach(b => b.classList.remove('active')); }
+        
+        let loaded = 0;
+        const check = () => { loaded++; if(loaded===3) initGame(); };
+        appleImg.onload = check; headImg.onload = check; tailImg.onload = check;
     </script>
 </body>
 </html>
