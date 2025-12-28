@@ -298,6 +298,10 @@
         const GRID_W = canvas.width / CELL_SIZE;
         const GRID_H = canvas.height / CELL_SIZE;
 
+        // --- 1. LOAD ẢNH QUẢ TÁO ---
+        const appleImg = new Image();
+        appleImg.src = '/pictures/apple_pixel.png'; // Đường dẫn ảnh táo
+
         let snake = [];
         let food = {};
         let currentAlgo = '';
@@ -332,8 +336,8 @@
             ctx.fillStyle = '#000';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            ctx.fillStyle = '#FF5252';
-            ctx.fillRect(food.x * CELL_SIZE, food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+            // --- 2. VẼ TÁO THAY CHO HÌNH VUÔNG ĐỎ ---
+            ctx.drawImage(appleImg, food.x * CELL_SIZE, food.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
 
             snake.forEach((segment, index) => {
                 if (index === 0) {
@@ -439,7 +443,10 @@
             document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
         }
 
-        initGame();
+        // Đảm bảo vẽ lần đầu khi ảnh load xong
+        appleImg.onload = function() {
+            initGame();
+        };
     </script>
 </body>
 </html>
